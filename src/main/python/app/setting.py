@@ -2,15 +2,19 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from datetime import datetime
+
+
 class SETTING(QDialog):
     def __init__(self, params):
         super().__init__()
         self.params = params
         self.db = self.params["db"].conn.cursor()
 
-        self.setFixedSize(320, 200)
+        self.setFixedSize(350, 250)
         self.setWindowTitle("Cedar Settings")
-        self.setStyleSheet(open(self.params["ctx"].get_resource("css/style.css")).read())
+        self.setStyleSheet(
+            open(self.params["ctx"].get_resource("css/style.css")).read()
+        )
         self.setWindowIcon(QIcon(self.params["ctx"].get_resource("icon/settings.png")))
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
@@ -58,6 +62,18 @@ class SETTING(QDialog):
         loan_dura_gridLay.addWidget(self.loan_dura_mem_opt)
 
         gridLay.addLayout(loan_dura_gridLay, 2, 1, 1, 2)
+
+        gridLay.addWidget(QLabel("Interest Starts After:"), 3, 0)
+        intr_start_gridLay = QHBoxLayout()
+        self.intr_start_mem_int = QLineEdit()
+        self.intr_start_mem_int.setValidator(QIntValidator())
+        self.intr_start_mem_opt = QComboBox()
+        self.intr_start_mem_opt.addItems(["Month(s)", "Year(s)"])
+        intr_start_gridLay.addWidget(self.intr_start_mem_int)
+        intr_start_gridLay.addWidget(self.intr_start_mem_opt)
+
+        gridLay.addLayout(intr_start_gridLay, 3, 1, 1, 2)
+
         member_wid.setLayout(gridLay)
 
         self.save_edit_btn1 = QPushButton(None)
@@ -70,19 +86,24 @@ class SETTING(QDialog):
         btn_layout1.addWidget(self.cancel_btn1)
         btn_layout1.addWidget(self.save_edit_btn1)
 
-        gridLay.addLayout(btn_layout1, 3, 0, 1, 0)
+        gridLay.addLayout(btn_layout1, 4, 0, 1, 0)
 
         if not data is None:
             dur = data[4].split(" ")
+            intr_start = data[5].split(" ")
             self.inter_rate_mem.setText(str(data[2]))
             self.loan_rate_mem.setText(str(data[3]))
             self.loan_dura_mem_int.setText(dur[0])
             self.loan_dura_mem_opt.setCurrentText(dur[1])
+            self.intr_start_mem_int.setText(intr_start[0])
+            self.intr_start_mem_opt.setCurrentText(intr_start[1])
 
             self.inter_rate_mem.setReadOnly(True)
             self.loan_rate_mem.setReadOnly(True)
             self.loan_dura_mem_int.setReadOnly(True)
             self.loan_dura_mem_opt.setDisabled(True)
+            self.intr_start_mem_int.setReadOnly(True)
+            self.intr_start_mem_opt.setDisabled(True)
 
             self.save_edit_btn1.setText("Edit")
         else:
@@ -90,6 +111,8 @@ class SETTING(QDialog):
             self.loan_rate_mem.setReadOnly(False)
             self.loan_dura_mem_int.setReadOnly(False)
             self.loan_dura_mem_opt.setDisabled(False)
+            self.intr_start_mem_int.setReadOnly(False)
+            self.intr_start_mem_opt.setDisabled(False)
 
             self.save_edit_btn1.setText("Save")
 
@@ -121,6 +144,17 @@ class SETTING(QDialog):
 
         gridLay.addLayout(loan_dura_sta_lay, 2, 1, 1, 2)
 
+        gridLay.addWidget(QLabel("Interest Starts After:"), 3, 0)
+        intr_start_gridLay = QHBoxLayout()
+        self.intr_start_sta_int = QLineEdit()
+        self.intr_start_sta_int.setValidator(QIntValidator())
+        self.intr_start_sta_opt = QComboBox()
+        self.intr_start_sta_opt.addItems(["Month(s)", "Year(s)"])
+        intr_start_gridLay.addWidget(self.intr_start_sta_int)
+        intr_start_gridLay.addWidget(self.intr_start_sta_opt)
+
+        gridLay.addLayout(intr_start_gridLay, 3, 1, 1, 2)
+
         self.save_edit_btn2 = QPushButton(None)
         self.cancel_btn2 = QPushButton("Cancel")
         self.cancel_btn2.clicked.connect(lambda: self.hide())
@@ -131,7 +165,7 @@ class SETTING(QDialog):
         btn_layout2.addWidget(self.cancel_btn2)
         btn_layout2.addWidget(self.save_edit_btn2)
 
-        gridLay.addLayout(btn_layout2, 3, 0, 1, 0)
+        gridLay.addLayout(btn_layout2, 4, 0, 1, 0)
 
         staff_wid.setLayout(gridLay)
 
@@ -161,15 +195,20 @@ class SETTING(QDialog):
         if account_type == "staff":
             if not data is None:
                 dur = data[4].split(" ")
+                intr_start = data[5].split(" ")
                 self.inter_rate_sta.setText(str(data[2]))
                 self.loan_rate_sta.setText(str(data[3]))
                 self.loan_dura_sta_int.setText(dur[0])
                 self.loan_dura_sta_opt.setCurrentText(dur[1])
+                self.intr_start_sta_int.setText(intr_start[0])
+                self.intr_start_sta_opt.setCurrentText(intr_start[1])
 
                 self.inter_rate_sta.setReadOnly(True)
                 self.loan_rate_sta.setReadOnly(True)
                 self.loan_dura_sta_int.setReadOnly(True)
                 self.loan_dura_sta_opt.setDisabled(True)
+                self.intr_start_sta_int.setReadOnly(True)
+                self.intr_start_sta_opt.setDisabled(True)
 
                 self.save_edit_btn2.setText("Edit")
             else:
@@ -177,6 +216,8 @@ class SETTING(QDialog):
                 self.loan_rate_sta.setReadOnly(False)
                 self.loan_dura_sta_int.setReadOnly(False)
                 self.loan_dura_sta_opt.setDisabled(False)
+                self.intr_start_sta_int.setReadOnly(False)
+                self.intr_start_sta_opt.setDisabled(False)
 
                 self.save_edit_btn2.setText("Save")
 
@@ -191,12 +232,17 @@ class SETTING(QDialog):
                 self.loan_rate_mem.setReadOnly(False)
                 self.loan_dura_mem_int.setReadOnly(False)
                 self.loan_dura_mem_opt.setDisabled(False)
+                self.intr_start_mem_int.setReadOnly(False)
+                self.intr_start_mem_opt.setDisabled(False)
+
                 self.save_edit_btn1.setText("Save")
             elif params["type"] == "staff":
                 self.inter_rate_sta.setReadOnly(False)
                 self.loan_rate_sta.setReadOnly(False)
                 self.loan_dura_sta_int.setReadOnly(False)
                 self.loan_dura_sta_opt.setDisabled(False)
+                self.intr_start_sta_int.setReadOnly(False)
+                self.intr_start_sta_opt.setDisabled(False)
                 self.save_edit_btn2.setText("Save")
         elif params["text"].lower() == "save":
             if params["type"] == "member":
@@ -205,22 +251,29 @@ class SETTING(QDialog):
                 self.loan_dura_mem_int.setReadOnly(True)
                 self.loan_dura_mem_opt.setDisabled(True)
                 self.inter_rate_mem.setReadOnly(True)
+                self.intr_start_mem_int.setReadOnly(True)
+                self.intr_start_mem_opt.setDisabled(True)
                 self.save_edit_btn1.setText("Edit")
 
                 interest_rate = self.inter_rate_mem.text()
                 loan_rate = self.loan_rate_mem.text()
                 loan_duration = f"{self.loan_dura_mem_int.text()} {self.loan_dura_mem_opt.currentText()}"
+                interest_start = f"{self.intr_start_mem_int.text()} {self.intr_start_mem_opt.currentText()}"
+
             elif params["type"] == "staff":
                 self.inter_rate_sta.setReadOnly(True)
                 self.loan_rate_sta.setReadOnly(True)
                 self.loan_dura_sta_int.setReadOnly(True)
                 self.loan_dura_sta_opt.setDisabled(True)
                 self.inter_rate_sta.setReadOnly(True)
+                self.intr_start_sta_int.setReadOnly(True)
+                self.intr_start_sta_opt.setDisabled(True)
                 self.save_edit_btn2.setText("Edit")
 
                 interest_rate = self.inter_rate_sta.text()
                 loan_rate = self.loan_rate_sta.text()
                 loan_duration = f"{self.loan_dura_sta_int.text()} {self.loan_dura_sta_opt.currentText()}"
+                interest_start = f"{self.intr_start_sta_int.text()} {self.intr_start_sta_opt.currentText()}"
 
             data = self._check_set_data(0 if params["type"] == "member" else 1)
 
@@ -230,12 +283,14 @@ class SETTING(QDialog):
                     SET interest_rate=?, 
                     loan_rate=?,
                     loan_duration=?,
+                    interest_start=?,
                     date_updated=?
                     WHERE account_type=?;""",
                     (
                         interest_rate,
                         loan_rate,
                         loan_duration,
+                        interest_start,
                         datetime.today().date(),
                         params["type"],
                     ),
@@ -247,14 +302,16 @@ class SETTING(QDialog):
                         interest_rate,
                         loan_rate,
                         loan_duration,
+                        interest_start,
                         date_added,
                         date_updated) 
-                        VALUES(?,?,?,?,?,?);""",
+                        VALUES(?,?,?,?,?,?,?);""",
                     (
                         params["type"],
                         interest_rate,
                         loan_rate,
                         loan_duration,
+                        interest_start,
                         datetime.today().date(),
                         datetime.today().date(),
                     ),
@@ -263,16 +320,21 @@ class SETTING(QDialog):
 
             data = self._check_set_data(0 if params["type"] == "member" else 1)
             duration = data[4].split(" ")
+            intr_start = data[5].split(" ")
             if params["type"] == "member":
                 self.inter_rate_mem.setText(str(data[2]))
                 self.loan_rate_mem.setText(str(data[3]))
                 self.loan_dura_mem_int.setText(duration[0])
                 self.loan_dura_mem_opt.setCurrentText(duration[1])
+                self.intr_start_mem_int.setText(intr_start[0])
+                self.intr_start_mem_opt.setCurrentText(intr_start[1])
 
                 self.inter_rate_mem.setReadOnly(True)
                 self.loan_rate_mem.setReadOnly(True)
                 self.loan_dura_mem_int.setReadOnly(True)
                 self.loan_dura_mem_opt.setDisabled(True)
+                self.intr_start_mem_int.setReadOnly(True)
+                self.intr_start_mem_opt.setDisabled(True)
 
                 self.save_edit_btn1.setText("Edit")
             elif params["type"] == "staff":
@@ -280,10 +342,14 @@ class SETTING(QDialog):
                 self.loan_rate_sta.setText(str(data[3]))
                 self.loan_dura_sta_int.setText(duration[0])
                 self.loan_dura_sta_opt.setCurrentText(duration[1])
+                self.intr_start_sta_int.setText(intr_start[0])
+                self.intr_start_sta_opt.setCurrentText(intr_start[1])
 
                 self.inter_rate_sta.setReadOnly(True)
                 self.loan_rate_sta.setReadOnly(True)
                 self.loan_dura_sta_int.setReadOnly(True)
                 self.loan_dura_sta_opt.setDisabled(True)
+                self.intr_start_sta_int.setReadOnly(True)
+                self.intr_start_sta_opt.setDisabled(True)
 
                 self.save_edit_btn2.setText("Edit")

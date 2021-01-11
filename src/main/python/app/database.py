@@ -32,6 +32,7 @@ class DataBase:
                 interest_rate INT NOT NULL,
                 loan_rate INT NOT NULL,
                 loan_duration TEXT NOT NULL,
+                interest_start TEXT NOT NULL,
                 date_added DATE NOT NULL,
                 date_updated DATE NOT NULL);"""
         )

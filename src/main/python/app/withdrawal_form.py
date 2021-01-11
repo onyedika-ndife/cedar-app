@@ -544,8 +544,8 @@ class WITHDRAWAL_FORM(QWidget):
             user = []
             for item in guarantees:
                 self.db.execute(
-                    """SELECT first_name,last_name FROM users WHERE id=?;""",
-                    (item[10],),
+                    """SELECT first_name, last_name FROM users WHERE id=?;""",
+                    (item[11],),
                 )
                 name = self.db.fetchone()
                 user.append(f"{name[1]} {name[0]}")
@@ -611,13 +611,11 @@ class WITHDRAWAL_FORM(QWidget):
             )
             self.db.execute(
                 """INSERT INTO deleted (
-                deleted_id,
                 deleted_amount,
                 deleted_date,
                 date,
-                user_id) VALUES (?,?,?,?,?);""",
+                user_id) VALUES (?,?,?,?);""",
                 (
-                    _lst[0],
                     amount,
                     _lst[2],
                     datetime.today().date(),
@@ -631,13 +629,11 @@ class WITHDRAWAL_FORM(QWidget):
             )
             self.db.execute(
                 """INSERT INTO deleted (
-                deleted_id,
                 deleted_amount,
                 deleted_date,
                 date,
-                user_id) VALUES (?,?,?,?,?);""",
+                user_id) VALUES (?,?,?,?);""",
                 (
-                    _lst[0],
                     _lst[1],
                     _lst[2],
                     datetime.today().date(),

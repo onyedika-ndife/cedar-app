@@ -309,8 +309,6 @@ class USER_LIST(QWidget):
         if choice.text() == "&Yes":
             _list = self.selected_list_0 if acc_type == 0 else self.selected_list_1
 
-            print(_list)
-
             for user in _list:
                 name = user.split(" ")
                 self.db.execute(

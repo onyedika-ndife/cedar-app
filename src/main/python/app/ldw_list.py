@@ -368,13 +368,21 @@ class LDW_LIST(QWidget):
                                 user.append(datetime.strptime(i[3], "%Y-%m-%d"))
                         self.table_data[account_type][1].append(user)
         else:
-            if self.context == "loans" or self.context == "clear_loans":
+            if self.context == "loans":
                 self.table_data[account_type][1] = [
                     [
                         "ERROR",
                         "No Loan Issued to {}".format(acc_type.capitalize()),
                     ]
                 ]
+            elif self.context == "clear_loans":
+                if len(self.table_data[account_type][1]) == 0:
+                    self.table_data[account_type][1] = [
+                        [
+                            "ERROR",
+                            "No Pending Loan for {}".format(acc_type.capitalize()),
+                        ]
+                    ]
             elif self.context == "deposits":
                 self.table_data[account_type][1] = [
                     [
@@ -387,12 +395,20 @@ class LDW_LIST(QWidget):
                     ["ERROR", "No Withdrawal by {}".format(acc_type.capitalize())]
                 ]
 
-        if self.context == "loans" or self.context == "clear_loans":
+        if self.context == "loans":
             if len(self.table_data[account_type][1]) == 0:
                 self.table_data[account_type][1] = [
                     [
                         "ERROR",
                         "No Loan Issued to {}".format(acc_type.capitalize()),
+                    ]
+                ]
+        elif self.context == "clear_loans":
+            if len(self.table_data[account_type][1]) == 0:
+                self.table_data[account_type][1] = [
+                    [
+                        "ERROR",
+                        "No Pending Loan for {}".format(acc_type.capitalize()),
                     ]
                 ]
         elif self.context == "deposits":

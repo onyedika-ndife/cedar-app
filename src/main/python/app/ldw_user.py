@@ -388,7 +388,6 @@ class USER_LDW(QWidget):
                         )
                         self.db.execute(
                             """SELECT 
-                            deleted_id,
                             deleted_amount,
                             deleted_date 
                             FROM deleted WHERE user_id=? AND date=?;""",
@@ -406,7 +405,7 @@ class USER_LDW(QWidget):
                                 user_id) VALUES (?,?,?);""",
                             (
                                 amt,
-                                deleted[2],
+                                deleted[1],
                                 self.user_id,
                             ),
                         )
@@ -422,7 +421,7 @@ class USER_LDW(QWidget):
                                 user_id) VALUES (?,?,?,?);""",
                             (
                                 amt,
-                                deleted[2],
+                                deleted[1],
                                 last_deposit_id,
                                 self.user_id,
                             ),
@@ -436,7 +435,7 @@ class USER_LDW(QWidget):
                         self.params["db"].conn.commit()
 
                         interest_start = datetime.strptime(
-                            deleted[2], "%Y-%m-%d"
+                            deleted[1], "%Y-%m-%d"
                         ) + timedelta(weeks=13.036)
 
                         deposit_interval = IntervalTrigger(
@@ -456,7 +455,7 @@ class USER_LDW(QWidget):
                         )
 
                     elif with_from == "interest":
-                        sav_intr = float(sav_intr) + float(dep_intr)
+                        sav_intr = float(sav_intr) + float(amt)
                         total = float(total) + float(amt)
                         self.db.execute(
                             """UPDATE savings SET interest_earned=?, total=? WHERE user_id=?;""",
@@ -467,7 +466,7 @@ class USER_LDW(QWidget):
                             ),
                         )
                         self.db.execute(
-                            """DELETE FROM withdrawals WHERE user_id=? AND ;""",
+                            """DELETE FROM withdrawals WHERE user_id=? AND amount=? AND date=?;""",
                             (self.user_id, amt, date),
                         )
 
@@ -533,10 +532,23 @@ class USER_LDW(QWidget):
             total = sav_intr[1]
 
             if interest_per_day == 0.0:
-                _3_months = 91.25
-                _3_months_interest = _3_months * interest_rate_per_day * float(amount)
+                db.execute(
+                    """SELECT interest_start FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
+                    (account_type,),
+                )
+                intr_start = db.fetchone()[0]
+                ins = intr_start.split(" ")
+                time = ins[1].lower().replace("(s)", "")
 
-                interest_per_day += _3_months_interest
+                if time == "year":
+                    time = 365 * int(ins[0])
+                elif time == "month":
+                    time = 30.417 * int(ins[0])
+
+                _months = time
+                _months_interest = _months * interest_rate_per_day * float(amount)
+
+                interest_per_day += _months_interest
 
                 db.execute(
                     """UPDATE deposit_interest SET

@@ -202,7 +202,12 @@ class DEPOSIT_FORM(QDialog):
                 )
 
                 self.params["db"].conn.commit()
-                self._check_shed(user_id, last_deposit_id, amt, date)
+                self.db.execute(
+                    """SELECT account_type FROM users WHERE id=?;""",
+                    (user_id,),
+                )
+                acc_type = self.db.fetchone()[0]
+                self._check_shed(user_id, acc_type, last_deposit_id, amt, date)
 
                 msg.setIconPixmap(
                     QPixmap(self.params["ctx"].get_resource("icon/success.png"))
@@ -226,10 +231,23 @@ class DEPOSIT_FORM(QDialog):
             new_numb = "{:,}".format(int(number))
             self.amt_int.setText(new_numb)
 
-    def _check_shed(self, user_id, last_deposit_id, amount, date):
+    def _check_shed(self, user_id, account_type, last_deposit_id, amount, date):
         py_date = datetime.strptime(date, "%Y-%m-%d").date()
         today = datetime.today().date()
-        interest_start = py_date + timedelta(weeks=13.036)
+        self.db.execute(
+            """SELECT interest_start FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
+            (account_type,),
+        )
+        intr_start = self.db.fetchone()[0]
+        ins = intr_start.split(" ")
+        time = ins[1].lower().replace("(s)", "")
+
+        if time == "year":
+            time = 52.143 * int(ins[0])
+        elif time == "month":
+            time = 4.345 * int(ins[0])
+        interest_start = py_date + timedelta(weeks=time)
+
         if not py_date < today:
             deposit_interval = IntervalTrigger(
                 seconds=1,
@@ -385,10 +403,23 @@ class DEPOSIT_FORM(QDialog):
             total = sav_intr[1]
 
             if interest_per_day == 0.0:
-                _3_months = 91.25
-                _3_months_interest = _3_months * interest_rate_per_day * float(amount)
+                db.execute(
+                    """SELECT interest_start FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
+                    (account_type,),
+                )
+                intr_start = db.fetchone()[0]
+                ins = intr_start.split(" ")
+                time = ins[1].lower().replace("(s)", "")
 
-                interest_per_day += _3_months_interest
+                if time == "year":
+                    time = 365 * int(ins[0])
+                elif time == "month":
+                    time = 30.417 * int(ins[0])
+
+                _months = time
+                _months_interest = _months * interest_rate_per_day * float(amount)
+
+                interest_per_day += _months_interest
 
                 db.execute(
                     """UPDATE deposit_interest SET
