@@ -53,23 +53,24 @@ class ADD_USER(QWidget):
         group_2_layout = QGridLayout()
         group_2.setLayout(group_2_layout)
 
-        self.fn_int = QLineEdit()
-        self.mn_int = QLineEdit()
-        self.ln_int = QLineEdit()
+        self.name = QLineEdit()
+        self.acc_no = QLineEdit()
+        self.shares = QLineEdit()
 
-        self.fn_int.textChanged.connect(lambda: self._capitalize(self.fn_int))
-        self.fn_int.textChanged.connect(self._check_for_save)
-        self.mn_int.textChanged.connect(lambda: self._capitalize(self.mn_int))
-        self.mn_int.textChanged.connect(self._check_for_save)
-        self.ln_int.textChanged.connect(lambda: self._capitalize(self.ln_int))
-        self.ln_int.textChanged.connect(self._check_for_save)
+        self.name.textChanged.connect(self._check_for_save)
+        self.acc_no.textChanged.connect(lambda: self._capitalize(self.acc_no))
+        self.acc_no.textChanged.connect(self._check_for_save)
+        self.shares.setValidator(QRegExpValidator(QRegExp("^[0-9]{1,},*")))
+        self.shares.setClearButtonEnabled(True)
+        self.shares.textChanged.connect(self._check_for_save)
+        self.shares.textChanged.connect(self._calc)
 
-        group_2_layout.addWidget(QLabel("First name:"), 0, 0)
-        group_2_layout.addWidget(self.fn_int, 0, 1)
-        group_2_layout.addWidget(QLabel("Middle name:"), 1, 0)
-        group_2_layout.addWidget(self.mn_int, 1, 1)
-        group_2_layout.addWidget(QLabel("Last name:"), 2, 0)
-        group_2_layout.addWidget(self.ln_int, 2, 1)
+        group_2_layout.addWidget(QLabel("Name:"), 0, 0)
+        group_2_layout.addWidget(self.name, 0, 1)
+        group_2_layout.addWidget(QLabel("Account Number:"), 1, 0)
+        group_2_layout.addWidget(self.acc_no, 1, 1)
+        group_2_layout.addWidget(QLabel("Shares:"), 2, 0)
+        group_2_layout.addWidget(self.shares, 2, 1)
 
         group_3 = QGroupBox("Personal Details")
         group_3_layout = QGridLayout()
@@ -207,12 +208,12 @@ class ADD_USER(QWidget):
                 self.option_2.setChecked(True)
 
             if len(name) == 3:
-                self.fn_int.setText(name[2])
-                self.mn_int.setText(name[1])
-                self.ln_int.setText(name[0])
+                self.name.setText(name[2])
+                self.acc_no.setText(name[1])
+                self.shares.setText(name[0])
             elif len(name) == 2:
-                self.fn_int.setText(name[1])
-                self.ln_int.setText(name[0])
+                self.name.setText(name[1])
+                self.shares.setText(name[0])
 
             if not self.image_path == self.blank_image:
                 self.remove_btn.setDisabled(False)
@@ -249,10 +250,16 @@ class ADD_USER(QWidget):
 
         self.setLayout(initial_layout)
 
+    def _calc(self, number):
+        if not number == "":
+            number = number.replace(",", "")
+            new_numb = "{:,}".format(int(number))
+            self.shares.setText(new_numb)
+
     def _get_image(self):
         data_dir = os.sep.join([home_dir, "Pictures"])
         frame = QFileDialog.getOpenFileName(
-            self, "Select Image", data_dir, "Image files (*.jpg, *.png)"
+            self, "Select Image", data_dir, "Image files (*.jpg, *.jpeg, *.png)"
         )
         self.image_path = frame[0]
         self.picture.setPixmap(QPixmap(self.image_path))
@@ -262,29 +269,33 @@ class ADD_USER(QWidget):
         self.image_path = self.blank_image
         self.picture.setPixmap(QPixmap(self.image_path))
 
-    def _capitalize(self, line_edit):
+    def _capitalize(self, line_edit, name):
         if not line_edit.text() == "":
-            text = line_edit.text().rstrip().capitalize()
+            text = (
+                line_edit.text()
+                if name == "name"
+                else line_edit.text().rstrip().upper()
+            )
             line_edit.setText(text)
 
     def _check_for_save(self):
-        if not self.fn_int.text() == "" and not self.ln_int.text() == "":
+        if not self.name.text() == "" and not self.shares.text() == "":
             self.save_btn.setDisabled(False)
         else:
             self.save_btn.setDisabled(True)
 
     def _confirm_save(self):
         name = (
-            f"{self.ln_int.text()} {self.mn_int.text()} {self.fn_int.text()}"
-            if not self.mn_int.text() == ""
-            else f"{self.ln_int.text()} {self.fn_int.text()}"
+            f"{self.shares.text()} {self.acc_no.text()} {self.name.text()}"
+            if not self.acc_no.text() == ""
+            else f"{self.shares.text()} {self.name.text()}"
         )
         self.acc_type = "member" if self.option_1.isChecked() else "staff"
         details = f"""The details are as follows:
                 
-                First Name: {self.fn_int.text()}
-                Middle Name: {self.mn_int.text()}
-                Last Name: {self.ln_int.text()}
+                First Name: {self.name.text()}
+                Middle Name: {self.acc_no.text()}
+                Last Name: {self.shares.text()}
                 Phonenumber: {self.mob_int.text()}
                 Email: {self.email_int.text()}
                 Address: {self.addr_int.text()}
@@ -309,8 +320,8 @@ class ADD_USER(QWidget):
             db.execute(
                 """SELECT id FROM users WHERE first_name=? AND last_name=?;""",
                 (
-                    self.fn_int.text().capitalize(),
-                    self.ln_int.text().capitalize(),
+                    self.name.text().capitalize(),
+                    self.shares.text().capitalize(),
                 ),
             )
 
@@ -361,9 +372,9 @@ class ADD_USER(QWidget):
                     if not self.image_path == self.blank_image:
                         dest = shutil.copy(self.image_path, acc_img_path)
                         new_dest = (
-                            f"{acc_img_path}\{self.ln_int.text().rstrip().lower()}_{self.fn_int.text().rstrip().lower()}.png"
+                            f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.png"
                             if dest.endswith(".png")
-                            else f"{acc_img_path}\{self.ln_int.text().rstrip().lower()}_{self.fn_int.text().rstrip().lower()}.jpg"
+                            else f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.jpg"
                         )
                         os.rename(dest, new_dest)
                         save_image = new_dest
@@ -384,9 +395,9 @@ class ADD_USER(QWidget):
                             profile_picture,
                             date_created) VALUES (?,?,?,?,?,?,?,?,?);""",
                         (
-                            self.fn_int.text().rstrip().capitalize(),
-                            self.mn_int.text().rstrip().capitalize(),
-                            self.ln_int.text().rstrip().capitalize(),
+                            self.name.text().rstrip().capitalize(),
+                            self.acc_no.text().rstrip().capitalize(),
+                            self.shares.text().rstrip().capitalize(),
                             self.mob_int.text().rstrip(),
                             self.email_int.text().rstrip(),
                             self.addr_int.text().rstrip().capitalize(),
@@ -433,7 +444,6 @@ class ADD_USER(QWidget):
                             user[0],
                         ),
                     )
-                    datetime.strftime
                     db.execute(
                         """INSERT INTO savings(date_updated, user_id) VALUES (?,?);""",
                         (
@@ -463,9 +473,9 @@ class ADD_USER(QWidget):
                             os.remove(old_image)
                         dest = shutil.copy(self.image_path, acc_img_path)
                         new_dest = (
-                            f"{acc_img_path}\{self.ln_int.text().rstrip().lower()}_{self.fn_int.text().rstrip().lower()}.png"
+                            f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.png"
                             if dest.endswith(".png")
-                            else f"{acc_img_path}\{self.ln_int.text().rstrip().lower()}_{self.fn_int.text().rstrip().lower()}.jpg"
+                            else f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.jpg"
                         )
                         os.rename(dest, new_dest)
                         save_image = new_dest
@@ -488,9 +498,9 @@ class ADD_USER(QWidget):
                             profile_picture=?
                             WHERE id=?;""",
                         (
-                            self.fn_int.text().rstrip().capitalize(),
-                            self.mn_int.text().rstrip().capitalize(),
-                            self.ln_int.text().rstrip().capitalize(),
+                            self.name.text().rstrip().capitalize(),
+                            self.acc_no.text().rstrip().capitalize(),
+                            self.shares.text().rstrip().capitalize(),
                             self.mob_int.text().rstrip(),
                             self.email_int.text().rstrip(),
                             self.addr_int.text().rstrip().capitalize(),
@@ -553,9 +563,9 @@ class ADD_USER(QWidget):
         self.picture.setPixmap(QPixmap(self.blank_image))
         self.remove_btn.setDisabled(True)
         self.dor.setDateTime(QDateTime.currentDateTime())
-        self.fn_int.clear()
-        self.mn_int.clear()
-        self.ln_int.clear()
+        self.name.clear()
+        self.acc_no.clear()
+        self.shares.clear()
         self.email_int.clear()
         self.mob_int.clear()
         self.addr_int.clear()

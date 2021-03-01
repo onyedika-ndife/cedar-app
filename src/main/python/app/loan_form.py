@@ -1,8 +1,12 @@
+import sqlite3
+from datetime import datetime, timedelta
+
 from apscheduler.triggers.interval import IntervalTrigger
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from datetime import datetime, timedelta
+
+from app import db_file
 
 
 class LOAN_FORM(QWidget):
@@ -355,8 +359,10 @@ class LOAN_FORM(QWidget):
                         if (
                             data["status"].lower() == "active"
                             and not int(data["balance"]) == 0
-                            and data["outstanding_loan"]["status"].lower() == "cleared"
-                            or data["outstanding_loan"]["status"].lower() == "-"
+                            and (
+                                data["outstanding_loan"]["status"].lower() == "cleared"
+                                or data["outstanding_loan"]["status"].lower() == "-"
+                            )
                         ):
                             self.date.setDisabled(False)
                             self.loan_amt.setDisabled(False)
@@ -456,8 +462,10 @@ class LOAN_FORM(QWidget):
                 if (
                     data["status"].lower() == "active"
                     and not int(data["balance"]) == 0
-                    and data["outstanding_loan"]["status"].lower() == "cleared"
-                    or data["outstanding_loan"]["status"].lower() == "-"
+                    and (
+                        data["outstanding_loan"]["status"].lower() == "cleared"
+                        or data["outstanding_loan"]["status"].lower() == "-"
+                    )
                 ):
                     if self.guar_2_combo.count() > 0:
                         self.guar_2_combo.clear()
@@ -516,8 +524,10 @@ class LOAN_FORM(QWidget):
                 if (
                     data["status"].lower() == "active"
                     and not int(data["balance"]) == 0
-                    and data["outstanding_loan"]["status"].lower() == "cleared"
-                    or data["outstanding_loan"]["status"].lower() == "-"
+                    and (
+                        data["outstanding_loan"]["status"].lower() == "cleared"
+                        or data["outstanding_loan"]["status"].lower() == "-"
+                    )
                 ):
                     self.save_btn.setDisabled(False)
                 else:

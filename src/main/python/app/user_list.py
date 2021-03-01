@@ -1,9 +1,11 @@
 import os
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from app.user import USER
+
 from app import Worker
+from app.user import USER
 
 
 class USER_LIST(QWidget):

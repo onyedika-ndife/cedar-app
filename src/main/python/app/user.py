@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from datetime import datetime
-from app.user_add import ADD_USER
+
 from app.ldw_user import USER_LDW
+from app.user_add import ADD_USER
 
 
 class USER(QWidget):

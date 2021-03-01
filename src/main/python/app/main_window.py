@@ -1,4 +1,7 @@
+import os
 import time
+import csv
+from datetime import datetime
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -16,6 +19,7 @@ from app import (
     user_add,
     user_list,
     withdrawal_form,
+    home_dir,
 )
 
 
@@ -79,6 +83,7 @@ class MainWindow(QMainWindow):
     def _view(self):
         self.initial_widget = QWidget()
         initial_layout = QVBoxLayout()
+        top_layout = QHBoxLayout()
 
         setting_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/settings.png")), "Settings"
@@ -87,18 +92,27 @@ class MainWindow(QMainWindow):
         self.params["parent"]["setting_btn"] = setting_btn
         setting_btn.clicked.connect(self._handle_setting)
 
-        initial_layout.addWidget(setting_btn, alignment=Qt.AlignRight)
+        imp_data_btn = QPushButton(
+            QIcon(self.params["ctx"].get_resource("icon/settings.png")), "Import Data"
+        )
+        imp_data_btn.setIconSize(QSize(20, 20))
+        imp_data_btn.clicked.connect(self._handle_imp_data)
+
+        top_layout.addWidget(imp_data_btn, alignment=Qt.AlignLeft)
+        top_layout.addWidget(setting_btn, alignment=Qt.AlignRight)
+
+        initial_layout.addLayout(top_layout)
 
         group_box_layout = QGridLayout()
         initial_layout.addLayout(group_box_layout)
 
         au_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/create_account.png")),
-            "Register Account",
+            "Register Member",
         )
         ul_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/account_list.png")),
-            "Account List",
+            "List of Members",
         )
         au_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         au_btn.setIconSize(QSize(50, 50))
@@ -122,7 +136,7 @@ class MainWindow(QMainWindow):
         )
         loan_clear_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/cleared_loan.png")),
-            "Clear Loans",
+            "Repay Loan",
         )
         loan_form_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         loan_form_btn.setObjectName("home")
@@ -141,11 +155,11 @@ class MainWindow(QMainWindow):
         group_box_layout.addLayout(loan_lay, 1, 0, 1, 0)
 
         deposit_btn = QPushButton(
-            QIcon(self.params["ctx"].get_resource("icon/deposit.png")), "Make Deposit"
+            QIcon(self.params["ctx"].get_resource("icon/deposit.png")), "Deposit"
         )
         deposit_list_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/deposit_list.png")),
-            "User Deposits",
+            "Deposit History",
         )
         deposit_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         deposit_list_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -159,11 +173,11 @@ class MainWindow(QMainWindow):
 
         withdraw_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/withdraw.png")),
-            "Make Withdrawal",
+            "Withdraw",
         )
         withdraw_list_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/withdraw_list.png")),
-            "User Withdrawals",
+            "Withdrawal History",
         )
         withdraw_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         withdraw_list_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -244,6 +258,11 @@ class MainWindow(QMainWindow):
         view = setting.SETTING(self.params)
         view.show()
 
+    def _handle_imp_data(self):
+        data_dir = os.sep.join([home_dir, "Documents"])
+        frame = QFileDialog.getOpenFileName(self, "Select CSV", data_dir, "CSV (*.csv)")
+        self.import_database(file_path=frame[0])
+
     def execute_check_fn(self, data, check):
         return data
 
@@ -287,6 +306,85 @@ class MainWindow(QMainWindow):
             msg.setDefaultButton(QMessageBox.Ok)
             msg.buttonClicked.connect(self._handle_setting)
             msg.exec_()
+
+    def import_database(self, file_path):
+        user_list = []
+        user_deposit_list = []
+        db = self.params["db"].conn.cursor()
+        with open(file_path) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=",")
+            row_count = 0
+            col_count = 0
+            for row in csv_reader:
+                if not row_count == 0:
+                    name = row[0].split(" ")
+
+                    status = (
+                        "inactive"
+                        if name[-1] == "***" or name[-1].lower() == "xxx"
+                        else "active"
+                    )
+                    name = " ".join(name[:-1])
+
+                    db.execute("""SELECT id FROM users WHERE name=?;""", (name,))
+                    current_user = db.fetchone()
+
+                    user_does_exist = True if not current_user is None else False
+
+                    if not user_does_exist:
+                        date = (
+                            datetime.strptime(row[3], "%d/%m/%Y").strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            )
+                            if not row[3] == ""
+                            else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        )
+                        db.execute(
+                            """INSERT INTO users (
+                                account_number,
+                                shares,
+                                name,
+                                account_type,
+                                status,
+                                date_created) VALUES (?,?,?,?,?,?);""",
+                            (
+                                row[1],
+                                row[2],
+                                name,
+                                "member",
+                                status,
+                                date,
+                            ),
+                        )
+                        db.execute(
+                            """
+                            SELECT id FROM users ORDER BY id DESC LIMIT 1;
+                            """
+                        )
+                        user = db.fetchone()
+                        db.execute(
+                            """INSERT INTO next_of_kin (
+                                user_id) VALUES (?);""",
+                            (user[0],),
+                        )
+                        db.execute(
+                            """INSERT INTO company (
+                                user_id) VALUES (?);""",
+                            (user[0],),
+                        )
+
+                        db.execute(
+                            """INSERT INTO savings(date_updated, user_id) VALUES (?,?);""",
+                            (
+                                date,
+                                user[0],
+                            ),
+                        )
+
+                    row_count += 1
+                else:
+                    row_count += 1
+        self.params["db"].conn.commit()
 
     def _back(self):
         if not self.params["parent"]["widget"].currentIndex() == 0:

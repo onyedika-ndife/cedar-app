@@ -1,4 +1,5 @@
 import sys
+
 from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.qt import QtScheduler
@@ -16,11 +17,10 @@ executors = {"default": ThreadPoolExecutor(20), "processpool": ProcessPoolExecut
 job_defaults = {"coalesce": False, "max_instances": 3}
 
 
-
 if __name__ == "__main__":
     appctxt = ApplicationContext()  # 1. Instantiate ApplicationContext
     db = DataBase()
-    
+
     qtsched = QtScheduler(
         jobstores=jobstores,
         executors=executors,

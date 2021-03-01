@@ -1,8 +1,10 @@
-from app import Worker
+from datetime import datetime
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from datetime import datetime
+
+from app import Worker
 
 
 class WITHDRAWAL_FORM(QWidget):

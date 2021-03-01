@@ -1,10 +1,12 @@
-from app import Worker, db_file
+import sqlite3
+from datetime import datetime, timedelta
+
 from apscheduler.triggers.interval import IntervalTrigger
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from datetime import datetime, timedelta
-import sqlite3
+
+from app import Worker, db_file
 
 
 class USER_LDW(QWidget):
@@ -496,113 +498,116 @@ class USER_LDW(QWidget):
 
         db = conn.cursor()
         db.execute("""SELECT account_type FROM users WHERE id=?;""", (user_id,))
-        account_type = db.fetchone()[0]
+        account = db.fetchone()
+        account_type = account[0]
+        status = account[1]
 
-        db.execute(
-            """SELECT * FROM deposit_interest WHERE deposit_id=? AND user_id=?;""",
-            (deposit_id, user_id),
-        )
-        deposit_interest = db.fetchone()
-
-        if not deposit_interest is None:
-            run_time = deposit_interest[6]
-            run_time += 1
-            date_added = deposit_interest[3]
-            date_elapsed = datetime.strptime(date_added, "%Y-%m-%d").date() + timedelta(
-                days=run_time
-            )
-            amount = deposit_interest[1]
-
+        if status == "active":
             db.execute(
-                """SELECT interest_rate FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
-                (account_type,),
+                """SELECT * FROM deposit_interest WHERE deposit_id=? AND user_id=?;""",
+                (deposit_id, user_id),
             )
-            interest_rate = db.fetchone()[0]
-            interest_rate_per_day = float(interest_rate) / 100 / 365
+            deposit_interest = db.fetchone()
 
-            interest_per_day = float(deposit_interest[2])
+            if not deposit_interest is None:
+                run_time = deposit_interest[6]
+                run_time += 1
+                date_added = deposit_interest[3]
+                date_elapsed = datetime.strptime(
+                    date_added, "%Y-%m-%d"
+                ).date() + timedelta(days=run_time)
+                amount = deposit_interest[1]
 
-            cal = 0
-            db.execute(
-                """SELECT interest_earned, total FROM savings WHERE user_id=?;""",
-                (user_id,),
-            )
-            sav_intr = db.fetchone()
-            intr_earned = sav_intr[0]
-            total = sav_intr[1]
-
-            if interest_per_day == 0.0:
                 db.execute(
-                    """SELECT interest_start FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
+                    """SELECT interest_rate FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
                     (account_type,),
                 )
-                intr_start = db.fetchone()[0]
-                ins = intr_start.split(" ")
-                time = ins[1].lower().replace("(s)", "")
+                interest_rate = db.fetchone()[0]
+                interest_rate_per_day = float(interest_rate) / 100 / 365
 
-                if time == "year":
-                    time = 365 * int(ins[0])
-                elif time == "month":
-                    time = 30.417 * int(ins[0])
+                interest_per_day = float(deposit_interest[2])
 
-                _months = time
-                _months_interest = _months * interest_rate_per_day * float(amount)
+                cal = 0
+                db.execute(
+                    """SELECT interest_earned, total FROM savings WHERE user_id=?;""",
+                    (user_id,),
+                )
+                sav_intr = db.fetchone()
+                intr_earned = sav_intr[0]
+                total = sav_intr[1]
 
-                interest_per_day += _months_interest
+                if interest_per_day == 0.0:
+                    db.execute(
+                        """SELECT interest_start FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
+                        (account_type,),
+                    )
+                    intr_start = db.fetchone()[0]
+                    ins = intr_start.split(" ")
+                    time = ins[1].lower().replace("(s)", "")
+
+                    if time == "year":
+                        time = 365 * int(ins[0])
+                    elif time == "month":
+                        time = 30.417 * int(ins[0])
+
+                    _months = time
+                    _months_interest = _months * interest_rate_per_day * float(amount)
+
+                    interest_per_day += _months_interest
+
+                    db.execute(
+                        """UPDATE deposit_interest SET
+                            interest=?,
+                            date_interest_start=?,
+                            date_last_interest=?,
+                            run_time=? WHERE deposit_id=? AND user_id=?;
+                        """,
+                        (
+                            round(interest_per_day),
+                            date_elapsed.strftime("%Y-%m-%d"),
+                            date_elapsed.strftime("%Y-%m-%d"),
+                            run_time,
+                            deposit_id,
+                            user_id,
+                        ),
+                    )
+                    intr_earned += round(interest_per_day)
+                    total += round(interest_per_day)
+                else:
+                    cal = float(amount) * float(interest_rate_per_day)
+                    interest_per_day += cal
+
+                    db.execute(
+                        """UPDATE deposit_interest SET
+                            interest=?,
+                            date_last_interest=?,
+                            run_time=? WHERE deposit_id=? AND user_id=?;""",
+                        (
+                            round(interest_per_day),
+                            date_elapsed.strftime("%Y-%m-%d"),
+                            run_time,
+                            deposit_id,
+                            user_id,
+                        ),
+                    )
+
+                    intr_earned += round(cal)
+                    total += round(cal)
 
                 db.execute(
-                    """UPDATE deposit_interest SET
-                        interest=?,
-                        date_interest_start=?,
-                        date_last_interest=?,
-                        run_time=? WHERE deposit_id=? AND user_id=?;
-                    """,
+                    """UPDATE savings SET
+                        interest_earned=?,
+                        total=?,
+                        date_updated=? WHERE user_id=?;""",
                     (
-                        round(interest_per_day),
+                        round(intr_earned),
+                        round(total),
                         date_elapsed.strftime("%Y-%m-%d"),
-                        date_elapsed.strftime("%Y-%m-%d"),
-                        run_time,
-                        deposit_id,
                         user_id,
                     ),
                 )
-                intr_earned += round(interest_per_day)
-                total += round(interest_per_day)
-            else:
-                cal = float(amount) * float(interest_rate_per_day)
-                interest_per_day += cal
-
-                db.execute(
-                    """UPDATE deposit_interest SET
-                        interest=?,
-                        date_last_interest=?,
-                        run_time=? WHERE deposit_id=? AND user_id=?;""",
-                    (
-                        round(interest_per_day),
-                        date_elapsed.strftime("%Y-%m-%d"),
-                        run_time,
-                        deposit_id,
-                        user_id,
-                    ),
-                )
-
-                intr_earned += round(cal)
-                total += round(cal)
-
-            db.execute(
-                """UPDATE savings SET
-                    interest_earned=?,
-                    total=?,
-                    date_updated=? WHERE user_id=?;""",
-                (
-                    round(intr_earned),
-                    round(total),
-                    date_elapsed.strftime("%Y-%m-%d"),
-                    user_id,
-                ),
-            )
-            conn.commit()
-            db.close()
+                conn.commit()
+                db.close()
 
 
 class LDWUSERTABLE(QAbstractTableModel):

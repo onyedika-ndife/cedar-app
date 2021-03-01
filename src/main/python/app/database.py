@@ -1,8 +1,8 @@
 import os
-import sqlite3
 import shutil
+import sqlite3
 
-from app import data_dir, db_file, home_dir, data_dir_2
+from app import data_dir, data_dir_2, db_file, home_dir
 
 
 class DataBase:
@@ -40,9 +40,9 @@ class DataBase:
         db.execute(
             """CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                first_name TEXT NOT NULL,
-                middle_name TEXT,
-                last_name TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                shares REAL DEFAULT 0 NOT NULL,
+                name TEXT NOT NULL,
                 phonenumber TEXT,
                 email TEXT, 
                 address TEXT,
