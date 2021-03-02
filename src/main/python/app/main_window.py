@@ -332,13 +332,14 @@ class MainWindow(QMainWindow):
                     user_does_exist = True if not current_user is None else False
 
                     if not user_does_exist:
-                        date = (
+                        create_date = (
                             datetime.strptime(row[3], "%d/%m/%Y").strftime(
                                 "%Y-%m-%d %H:%M:%S"
                             )
                             if not row[3] == ""
                             else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         )
+
                         db.execute(
                             """INSERT INTO users (
                                 account_number,
@@ -353,7 +354,7 @@ class MainWindow(QMainWindow):
                                 name,
                                 "member",
                                 status,
-                                date,
+                                create_date,
                             ),
                         )
                         db.execute(
@@ -361,26 +362,241 @@ class MainWindow(QMainWindow):
                             SELECT id FROM users ORDER BY id DESC LIMIT 1;
                             """
                         )
-                        user = db.fetchone()
+                        user_id = db.fetchone()[0]
                         db.execute(
                             """INSERT INTO next_of_kin (
                                 user_id) VALUES (?);""",
-                            (user[0],),
+                            (user_id,),
                         )
                         db.execute(
                             """INSERT INTO company (
                                 user_id) VALUES (?);""",
-                            (user[0],),
+                            (user_id,),
                         )
 
                         db.execute(
                             """INSERT INTO savings(date_updated, user_id) VALUES (?,?);""",
                             (
-                                date,
-                                user[0],
+                                create_date,
+                                user_id,
                             ),
                         )
 
+                        # -------------------------------------
+                        # -------------------------------------
+                        deposit_date = (
+                            datetime.strptime(row[5], "%d/%m/%Y").strftime("%Y-%m-%d")
+                            if not row[5] == ""
+                            else datetime.now().strftime("%Y-%m-%d")
+                        )
+                        savings_date = (
+                            datetime.strptime(deposit_date, "%Y-%m-%d").strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            )
+                            if not deposit_date == ""
+                            else create_date
+                        )
+                        amt = row[4]
+
+                        db.execute(
+                            """SELECT balance,total FROM savings WHERE user_id=?""",
+                            (user_id,),
+                        )
+
+                        savings = db.fetchone()
+                        bal = float(savings[0]) + float(amt) if not amt == "" else None
+                        total = (
+                            float(savings[1]) + float(amt) if not amt == "" else None
+                        )
+
+                        if not amt == "":
+                            db.execute(
+                                """UPDATE savings SET
+                                        balance=?,
+                                        total=?,
+                                        date_updated=? WHERE user_id=?""",
+                                (
+                                    bal,
+                                    total,
+                                    savings_date,
+                                    user_id,
+                                ),
+                            )
+                            db.execute(
+                                f"""INSERT INTO deposits (
+                                    amount,
+                                    date,
+                                    user_id) VALUES (?,?,?);""",
+                                (
+                                    float(amt),
+                                    deposit_date,
+                                    user_id,
+                                ),
+                            )
+                        # -------------------------------------
+                        # -------------------------------------
+                        withdraw_date = (
+                            datetime.strptime(row[7], "%d/%m/%Y").strftime("%Y-%m-%d")
+                            if not row[7] == ""
+                            else datetime.now().strftime("%Y-%m-%d")
+                        )
+                        savings_date = (
+                            datetime.strptime(withdraw_date, "%Y-%m-%d").strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            )
+                            if not withdraw_date == ""
+                            else create_date
+                        )
+                        amt = row[6]
+
+                        db.execute(
+                            """SELECT balance,total FROM savings WHERE user_id=?""",
+                            (user_id,),
+                        )
+                        savings = db.fetchone()
+                        bal = float(savings[0]) - float(amt) if not amt == "" else None
+                        total = (
+                            float(savings[1]) - float(amt) if not amt == "" else None
+                        )
+                        if not amt == "":
+                            db.execute(
+                                """UPDATE savings SET
+                                    balance=?,
+                                    total=?,
+                                    date_updated=? WHERE user_id=?;""",
+                                (
+                                    bal,
+                                    total,
+                                    savings_date,
+                                    user_id,
+                                ),
+                            )
+                            db.execute(
+                                """INSERT INTO withdrawals (
+                                    amount,
+                                    withdrawn_from,
+                                    date,
+                                    user_id) VALUES (?,?,?,?)""",
+                                (
+                                    float(amt),
+                                    "balance",
+                                    withdraw_date,
+                                    user_id,
+                                ),
+                            )
+                        # -------------------------------------
+                        # -------------------------------------
+                    else:
+                        db.execute(
+                            """INSERT INTO savings(date_updated, user_id) VALUES (?,?);""",
+                            (
+                                create_date,
+                                current_user[0],
+                            ),
+                        )
+
+                        # -------------------------------------
+                        # -------------------------------------
+                        deposit_date = (
+                            datetime.strptime(row[5], "%d/%m/%Y").strftime("%Y-%m-%d")
+                            if not row[5] == ""
+                            else datetime.now().strftime("%Y-%m-%d")
+                        )
+                        savings_date = (
+                            datetime.strptime(deposit_date, "%Y-%m-%d").strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            )
+                            if not deposit_date == ""
+                            else create_date
+                        )
+                        amt = row[4]
+
+                        db.execute(
+                            """SELECT balance,total FROM savings WHERE user_id=?""",
+                            (current_user[0],),
+                        )
+
+                        savings = db.fetchone()
+                        bal = float(savings[0]) + float(amt) if not amt == "" else None
+                        total = (
+                            float(savings[1]) + float(amt) if not amt == "" else None
+                        )
+
+                        if not amt == "":
+                            db.execute(
+                                """UPDATE savings SET
+                                        balance=?,
+                                        total=?,
+                                        date_updated=? WHERE user_id=?""",
+                                (
+                                    bal,
+                                    total,
+                                    savings_date,
+                                    current_user[0],
+                                ),
+                            )
+                            db.execute(
+                                f"""INSERT INTO deposits (
+                                    amount,
+                                    date,
+                                    user_id) VALUES (?,?,?);""",
+                                (
+                                    float(amt),
+                                    deposit_date,
+                                    current_user[0],
+                                ),
+                            )
+                        # -------------------------------------
+                        # -------------------------------------
+                        withdraw_date = (
+                            datetime.strptime(row[7], "%d/%m/%Y").strftime("%Y-%m-%d")
+                            if not row[7] == ""
+                            else datetime.now().strftime("%Y-%m-%d")
+                        )
+                        savings_date = (
+                            datetime.strptime(withdraw_date, "%Y-%m-%d").strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            )
+                            if not withdraw_date == ""
+                            else create_date
+                        )
+                        amt = row[6]
+
+                        db.execute(
+                            """SELECT balance,total FROM savings WHERE user_id=?""",
+                            (current_user[0],),
+                        )
+                        savings = db.fetchone()
+                        bal = float(savings[0]) - float(amt) if not amt == "" else None
+                        total = (
+                            float(savings[1]) - float(amt) if not amt == "" else None
+                        )
+                        if not amt == "":
+                            db.execute(
+                                """UPDATE savings SET
+                                    balance=?,
+                                    total=?,
+                                    date_updated=? WHERE user_id=?;""",
+                                (
+                                    bal,
+                                    total,
+                                    savings_date,
+                                    current_user[0],
+                                ),
+                            )
+                            db.execute(
+                                """INSERT INTO withdrawals (
+                                    amount,
+                                    withdrawn_from,
+                                    date,
+                                    user_id) VALUES (?,?,?,?)""",
+                                (
+                                    float(amt),
+                                    "balance",
+                                    withdraw_date,
+                                    current_user[0],
+                                ),
+                            )
                     row_count += 1
                 else:
                     row_count += 1
