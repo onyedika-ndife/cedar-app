@@ -80,10 +80,10 @@ class DEPOSIT_FORM(QDialog):
         self.setLayout(initial_layout)
 
     def _handle_check_save(self):
-        name = self.combo_box.currentText().split(" ")
+        name = self.combo_box.currentText()
         self.db.execute(
-            """SELECT account_type FROM users WHERE last_name=? AND first_name=?;""",
-            (name[0], name[1]),
+            """SELECT account_type FROM users WHERE name=?;""",
+            (name,),
         )
         acc_type = self.db.fetchone()[0]
         self.db.execute("""SELECT * FROM settings WHERE account_type=?;""", (acc_type,))
@@ -138,12 +138,12 @@ class DEPOSIT_FORM(QDialog):
 
     def _handle_dw_save(self, choice):
         if choice.text() == "&Yes":
-            user = self.combo_box.currentText().split(" ")
+            user = self.combo_box.currentText()
             amt = self.amt_int.text()
             amt = amt.replace(",", "")
             self.db.execute(
-                """SELECT id FROM users WHERE last_name=? AND first_name=?;""",
-                (user[0], user[1]),
+                """SELECT id FROM users WHERE name=?;""",
+                (user,),
             )
             user_id = self.db.fetchone()[0]
             msg = QMessageBox()
@@ -361,7 +361,7 @@ class DEPOSIT_FORM(QDialog):
         self.db.execute("""SELECT * FROM users;""")
         accounts = []
         for user in self.db.fetchall():
-            accounts.append(f"{user[3]} {user[1]}")
+            accounts.append(user[3])
         return accounts
 
     @staticmethod

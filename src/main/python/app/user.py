@@ -69,17 +69,17 @@ class USER(QWidget):
         picture = QLabel()
         picture.setScaledContents(True)
         picture.setFixedSize(150, 150)
-        pro_pic_lay.addWidget(picture, 0, 0, 3, 1)
+        pro_pic_lay.addWidget(picture, 0, 0, 4, 1)
 
-        rows = [(i, 1) for i in range(0, 3)]
+        rows = [(i, 1) for i in range(0, 4)]
 
         columns = []
         keys = list(self.account["details"].keys())
 
-        for row, item in zip(rows, keys[1:4]):
-            label = QLabel(item)
+        for row, item in zip(rows, keys[1:5]):
+            label = QLabel(f"{item}:")
             label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            if row == (2, 1):
+            if row == (3, 1):
                 pro_pic_lay.addWidget(label, *row, alignment=Qt.AlignTop)
             else:
                 pro_pic_lay.addWidget(label, *row)
@@ -92,11 +92,11 @@ class USER(QWidget):
                 QPixmap(self.params["ctx"].get_resource("image/avatar.png"))
             )
 
-        for column, item in zip(columns, values[1:4]):
-            label = QLabel(str(item))
+        for column, item in zip(columns, values[1:5]):
+            label = QLabel(str(item if not item == "" else "-"))
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             label.setAlignment(Qt.AlignRight)
-            if column == (2, 2):
+            if column == (3, 2):
                 pro_pic_lay.addWidget(label, *column, alignment=Qt.AlignTop)
             else:
                 pro_pic_lay.addWidget(label, *column)
@@ -106,18 +106,20 @@ class USER(QWidget):
         rows = [
             (i, 0)
             for i in range(
-                len(self.account["details"].items()) - 4,
+                len(self.account["details"].items()) - 5,
                 len(self.account["details"].items()),
             )
         ]
         columns = []
-        for row, item in zip(rows, keys[4:]):
-            group_1_layout.addWidget(QLabel(item), *row)
+        for row, item in zip(rows, keys[5:]):
+            group_1_layout.addWidget(QLabel(f"{item}:"), *row)
             columns.append((row[0], 1))
 
-        for column, item in zip(columns, values[4:]):
+        for column, item in zip(columns, values[5:]):
             group_1_layout.addWidget(
-                QLabel(str(item)), *column, alignment=Qt.AlignRight
+                QLabel(str(item if not item == "" else "-")),
+                *column,
+                alignment=Qt.AlignRight,
             )
 
         group_2 = QGroupBox("Next of Kin")
@@ -128,11 +130,13 @@ class USER(QWidget):
         rows = [(i, 0) for i in range(len(self.account["next_of_kin"].items()))]
         columns = []
         for row, item in zip(rows, self.account["next_of_kin"].keys()):
-            group_2_layout.addWidget(QLabel(item), *row)
+            group_2_layout.addWidget(QLabel(f"{item}:"), *row)
             columns.append((row[0], 1))
         for column, item in zip(columns, self.account["next_of_kin"].values()):
             group_2_layout.addWidget(
-                QLabel(str(item)), *column, alignment=Qt.AlignRight
+                QLabel(str(item if not item.rstrip() == "" else "-")),
+                *column,
+                alignment=Qt.AlignRight,
             )
 
         group_3 = QGroupBox("Company")
@@ -143,11 +147,13 @@ class USER(QWidget):
         rows = [(i, 0) for i in range(len(self.account["company"].items()))]
         columns = []
         for row, item in zip(rows, self.account["company"].keys()):
-            group_3_layout.addWidget(QLabel(item), *row)
+            group_3_layout.addWidget(QLabel(f"{item}:"), *row)
             columns.append((row[0], 1))
         for column, item in zip(columns, self.account["company"].values()):
             group_3_layout.addWidget(
-                QLabel(str(item)), *column, alignment=Qt.AlignRight
+                QLabel(str(item if not item == "" else "-")),
+                *column,
+                alignment=Qt.AlignRight,
             )
 
         _left_layout = QVBoxLayout()
@@ -160,11 +166,13 @@ class USER(QWidget):
         rows = [(i, 0) for i in range(len(self.account["savings"].items()))]
         columns = []
         for row, item in zip(rows, self.account["savings"].keys()):
-            group_4_layout.addWidget(QLabel(item), *row)
+            group_4_layout.addWidget(QLabel(f"{item}:"), *row)
             columns.append((row[0], 1))
         for column, item in zip(columns, self.account["savings"].values()):
             group_4_layout.addWidget(
-                QLabel(str(item)), *column, alignment=Qt.AlignRight
+                QLabel(str(item if not item == "" else "-")),
+                *column,
+                alignment=Qt.AlignRight,
             )
 
         group_5 = QGroupBox("Last Loan")
@@ -176,11 +184,13 @@ class USER(QWidget):
             rows = [(i, 0) for i in range(len(self.account["last_loan"].items()))]
             columns = []
             for row, item in zip(rows, self.account["last_loan"].keys()):
-                group_5_layout.addWidget(QLabel(item), *row)
+                group_5_layout.addWidget(QLabel(f"{item}:"), *row)
                 columns.append((row[0], 1))
             for column, item in zip(columns, self.account["last_loan"].values()):
                 group_5_layout.addWidget(
-                    QLabel(str(item)), *column, alignment=Qt.AlignRight
+                    QLabel(str(item if not item == "" else "-")),
+                    *column,
+                    alignment=Qt.AlignRight,
                 )
             go_loan = QPushButton("View Loans")
             go_loan.clicked.connect(lambda: self._go_to({"text": go_loan.text()}))
@@ -202,11 +212,13 @@ class USER(QWidget):
             columns = []
 
             for row, item in zip(rows, self.account["last_deposit"].keys()):
-                group_6_layout.addWidget(QLabel(item), *row)
+                group_6_layout.addWidget(QLabel(f"{item}:"), *row)
                 columns.append((row[0], 1))
             for column, item in zip(columns, self.account["last_deposit"].values()):
                 group_6_layout.addWidget(
-                    QLabel(str(item)), *column, alignment=Qt.AlignRight
+                    QLabel(str(item if not item == "" else "-")),
+                    *column,
+                    alignment=Qt.AlignRight,
                 )
 
             go_deposit = QPushButton("View Deposits")
@@ -229,11 +241,13 @@ class USER(QWidget):
             columns = []
 
             for row, item in zip(rows, self.account["last_withdrawal"].keys()):
-                group_7_layout.addWidget(QLabel(item), *row)
+                group_7_layout.addWidget(QLabel(f"{item}:"), *row)
                 columns.append((row[0], 1))
             for column, item in zip(columns, self.account["last_withdrawal"].values()):
                 group_7_layout.addWidget(
-                    QLabel(str(item)), *column, alignment=Qt.AlignRight
+                    QLabel(str(item if not item == "" else "-")),
+                    *column,
+                    alignment=Qt.AlignRight,
                 )
 
             go_withdraw = QPushButton("View Withdrawals")
@@ -371,8 +385,9 @@ class USER(QWidget):
         self.db.execute("""SELECT * FROM users WHERE id=?;""", (self.user_id,))
         for item in self.db.fetchall():
             account["details"]["Image"] = item[9]
-            account["details"]["id"] = item[0]
-            account["details"]["Name"] = f"{item[3]} {item[1]}"
+            account["details"]["Account Number"] = item[1]
+            account["details"]["Name"] = f"{item[3]}"
+            account["details"]["Shares"] = "\u20A6 {:,}".format(int(item[2]))
             account["details"]["Account Type"] = item[7].capitalize()
             account["details"]["Phonenumber"] = item[4]
             account["details"]["Email"] = item[5]

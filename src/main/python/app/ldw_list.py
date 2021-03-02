@@ -174,10 +174,10 @@ class LDW_LIST(QWidget):
             and not i.data() == "No Deposit by Staff"
             and not i.data() == "No Withdrawal by Staff"
         ):
-            i = i.data().split(" ")
+            i = i.data()
             self.db.execute(
-                """SELECT * FROM users WHERE last_name=? AND first_name=?;""",
-                (i[0], i[1]),
+                """SELECT * FROM users WHERE name=?;""",
+                (i,),
             )
             user_id = self.db.fetchone()[0]
             if not self.context == "clear_loans":
@@ -326,7 +326,7 @@ class LDW_LIST(QWidget):
                     loan = self.db.fetchall()
                     if len(loan) > 0:
                         user = []
-                        user.append(f"{item[3]} {item[1]}")
+                        user.append(item[3])
                         for i in loan:
                             if item[0] == i[11]:
                                 user.append(i[1])
@@ -347,7 +347,7 @@ class LDW_LIST(QWidget):
                     deposit = self.db.fetchall()
                     if len(deposit) > 0:
                         user = []
-                        user.append(f"{item[3]} {item[1]}")
+                        user.append(item[3])
                         for i in deposit:
                             if item[0] == i[3]:
                                 user.append(i[1])
@@ -361,7 +361,7 @@ class LDW_LIST(QWidget):
                     withdrawal = self.db.fetchall()
                     if len(withdrawal) > 0:
                         user = []
-                        user.append(f"{item[3]} {item[1]}")
+                        user.append(item[3])
                         for i in withdrawal:
                             if item[0] == i[4]:
                                 user.append(i[1])

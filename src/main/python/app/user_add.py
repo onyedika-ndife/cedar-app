@@ -49,7 +49,7 @@ class ADD_USER(QWidget):
         group_1_layout.addWidget(self.option_1)
         group_1_layout.addWidget(self.option_2)
 
-        group_2 = QGroupBox("Name")
+        group_2 = QGroupBox("Account Details")
         group_2_layout = QGridLayout()
         group_2.setLayout(group_2_layout)
 
@@ -58,18 +58,19 @@ class ADD_USER(QWidget):
         self.shares = QLineEdit()
 
         self.name.textChanged.connect(self._check_for_save)
-        self.acc_no.textChanged.connect(lambda: self._capitalize(self.acc_no))
+        self.name.textChanged.connect(lambda: self._capitalize(self.name, "name"))
+        self.acc_no.textChanged.connect(lambda: self._capitalize(self.acc_no, "acc_no"))
         self.acc_no.textChanged.connect(self._check_for_save)
         self.shares.setValidator(QRegExpValidator(QRegExp("^[0-9]{1,},*")))
         self.shares.setClearButtonEnabled(True)
         self.shares.textChanged.connect(self._check_for_save)
         self.shares.textChanged.connect(self._calc)
 
-        group_2_layout.addWidget(QLabel("Name:"), 0, 0)
+        group_2_layout.addWidget(QLabel("Name"), 0, 0)
         group_2_layout.addWidget(self.name, 0, 1)
-        group_2_layout.addWidget(QLabel("Account Number:"), 1, 0)
+        group_2_layout.addWidget(QLabel("Account Number"), 1, 0)
         group_2_layout.addWidget(self.acc_no, 1, 1)
-        group_2_layout.addWidget(QLabel("Shares:"), 2, 0)
+        group_2_layout.addWidget(QLabel("Shares"), 2, 0)
         group_2_layout.addWidget(self.shares, 2, 1)
 
         group_3 = QGroupBox("Personal Details")
@@ -78,9 +79,9 @@ class ADD_USER(QWidget):
 
         self.mob_int = QLineEdit()
 
-        group_3_layout.addWidget(QLabel("Mobile:"), 0, 0)
+        group_3_layout.addWidget(QLabel("Mobile"), 0, 0)
         group_3_layout.addWidget(self.mob_int, 0, 1)
-        group_3_layout.addWidget(QLabel("Email:"), 1, 0)
+        group_3_layout.addWidget(QLabel("Email"), 1, 0)
 
         self.email_int = QLineEdit()
         self.addr_int = QLineEdit()
@@ -91,7 +92,7 @@ class ADD_USER(QWidget):
 
         group_3_layout.addWidget(self.email_int, 1, 1)
 
-        group_3_layout.addWidget(QLabel("Residential address:"), 2, 0)
+        group_3_layout.addWidget(QLabel("Residential address"), 2, 0)
         group_3_layout.addWidget(self.addr_int, 2, 1)
 
         group_4 = QGroupBox("Next of Kin")
@@ -107,17 +108,17 @@ class ADD_USER(QWidget):
 
         self.next_mob_int.setValidator(QDoubleValidator())
 
-        group_4_layout.addWidget(QLabel("First name:"), 0, 0)
+        group_4_layout.addWidget(QLabel("First name"), 0, 0)
         group_4_layout.addWidget(self.next_fn_int, 0, 1)
-        group_4_layout.addWidget(QLabel("Middle name:"), 1, 0)
+        group_4_layout.addWidget(QLabel("Middle name"), 1, 0)
         group_4_layout.addWidget(self.next_mn_int, 1, 1)
-        group_4_layout.addWidget(QLabel("Last name:"), 2, 0)
+        group_4_layout.addWidget(QLabel("Last name"), 2, 0)
         group_4_layout.addWidget(self.next_ln_int, 2, 1)
-        group_4_layout.addWidget(QLabel("Mobile:"), 3, 0)
+        group_4_layout.addWidget(QLabel("Mobile"), 3, 0)
         group_4_layout.addWidget(self.next_mob_int, 3, 1)
-        group_4_layout.addWidget(QLabel("Residential address:"), 4, 0)
+        group_4_layout.addWidget(QLabel("Residential address"), 4, 0)
         group_4_layout.addWidget(self.next_addr_int, 4, 1)
-        group_4_layout.addWidget(QLabel("Relationship:"), 5, 0)
+        group_4_layout.addWidget(QLabel("Relationship"), 5, 0)
         group_4_layout.addWidget(self.next_rel_int, 5, 1)
 
         group_5 = QGroupBox("Company")
@@ -129,11 +130,11 @@ class ADD_USER(QWidget):
         self.cadd_int = QLineEdit()
         self.ct_int.setValidator(QDoubleValidator())
 
-        group_5_layout.addWidget(QLabel("Name:"), 0, 0)
+        group_5_layout.addWidget(QLabel("Name"), 0, 0)
         group_5_layout.addWidget(self.cn_int, 0, 1)
-        group_5_layout.addWidget(QLabel("Telephone:"), 1, 0)
+        group_5_layout.addWidget(QLabel("Telephone"), 1, 0)
         group_5_layout.addWidget(self.ct_int, 1, 1)
-        group_5_layout.addWidget(QLabel("Address:"), 2, 0)
+        group_5_layout.addWidget(QLabel("Address"), 2, 0)
         group_5_layout.addWidget(self.cadd_int, 2, 1)
 
         pro_pic_lay = QGridLayout()
@@ -167,7 +168,7 @@ class ADD_USER(QWidget):
         main_widget_layout.addWidget(group_4, 3, 0, 1, 0)
         main_widget_layout.addWidget(group_5, 4, 0, 1, 0)
         dor_lay = QHBoxLayout()
-        dor_lbl = QLabel("Date of Registration:")
+        dor_lbl = QLabel("Date of Registration")
         dor_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         dor_lay.addWidget(dor_lbl)
         self.dor = QDateTimeEdit(calendarPopup=True)
@@ -200,20 +201,17 @@ class ADD_USER(QWidget):
                 if not user["details"]["Image"] == ""
                 else self.blank_image
             )
-            name = user["details"]["Name"].split(" ")
+
             nok_name = user["next_of_kin"]["Name"].split(" ")
+
             if user["details"]["Account Type"] == "Member":
                 self.option_1.setChecked(True)
             else:
                 self.option_2.setChecked(True)
 
-            if len(name) == 3:
-                self.name.setText(name[2])
-                self.acc_no.setText(name[1])
-                self.shares.setText(name[0])
-            elif len(name) == 2:
-                self.name.setText(name[1])
-                self.shares.setText(name[0])
+            self.name.setText(user["details"]["Name"])
+            self.acc_no.setText(user["details"]["Account Number"])
+            self.shares.setText(user["details"]["Shares"].replace("\u20A6", ""))
 
             if not self.image_path == self.blank_image:
                 self.remove_btn.setDisabled(False)
@@ -271,94 +269,105 @@ class ADD_USER(QWidget):
 
     def _capitalize(self, line_edit, name):
         if not line_edit.text() == "":
-            text = (
-                line_edit.text()
-                if name == "name"
-                else line_edit.text().rstrip().upper()
+            name_text = line_edit.text().split(" ") if name == "name" else None
+            name_text = (
+                [i.capitalize() for i in name_text] if not name_text is None else None
             )
+            name_text = " ".join(name_text) if not name_text is None else None
+            text = name_text if name == "name" else line_edit.text().rstrip().upper()
             line_edit.setText(text)
 
     def _check_for_save(self):
-        if not self.name.text() == "" and not self.shares.text() == "":
+        if (
+            not self.name.text() == ""
+            and not self.acc_no == ""
+            and not self.shares.text() == ""
+        ):
             self.save_btn.setDisabled(False)
         else:
             self.save_btn.setDisabled(True)
 
     def _confirm_save(self):
-        name = (
-            f"{self.shares.text()} {self.acc_no.text()} {self.name.text()}"
-            if not self.acc_no.text() == ""
-            else f"{self.shares.text()} {self.name.text()}"
-        )
-        self.acc_type = "member" if self.option_1.isChecked() else "staff"
-        details = f"""The details are as follows:
-                
-                First Name: {self.name.text()}
-                Middle Name: {self.acc_no.text()}
-                Last Name: {self.shares.text()}
-                Phonenumber: {self.mob_int.text()}
-                Email: {self.email_int.text()}
-                Address: {self.addr_int.text()}
-                Account Type: {self.acc_type}
-                Next of Kin:
-                    First Name: {self.next_fn_int.text()}
-                    Middle Name: {self.next_mn_int.text()}
-                    Last Name: {self.next_ln_int.text()}
-                    Phonenumber: {self.next_mob_int.text()}
-                    Address: {self.next_addr_int.text()}
-                    Relationship: {self.next_rel_int.text()}
-                Company:
-                    Name: {self.cn_int.text()}
-                    Telephone: {self.ct_int.text()}
-                    Address: {self.cadd_int.text()}
-                    
-                Date of Registration: {self.dor.dateTime().toPyDateTime().strftime("%Y-%m-%d %H:%M:%S")}"""
-        db = self.params["db"].conn.cursor()
+        name = self.name.text().split(" ")
         msg = QMessageBox()
         msg.setStyleSheet(open(self.params["ctx"].get_resource("css/style.css")).read())
-        if not self.kwargs:
-            db.execute(
-                """SELECT id FROM users WHERE first_name=? AND last_name=?;""",
-                (
-                    self.name.text().capitalize(),
-                    self.shares.text().capitalize(),
-                ),
-            )
+        if len(name) >= 2:
+            name = " ".join(name)
+            self.acc_type = "member" if self.option_1.isChecked() else "staff"
+            details = f"""The details are as follows:
+                    
+                    Name: {name}
+                    Account Number: {self.acc_no.text()}
+                    Shares: {self.shares.text()}
+                    Phonenumber: {self.mob_int.text()}
+                    Email: {self.email_int.text()}
+                    Address: {self.addr_int.text()}
+                    Account Type: {self.acc_type}
+                    Next of Kin:
+                        First Name: {self.next_fn_int.text()}
+                        Middle Name: {self.next_mn_int.text()}
+                        Last Name: {self.next_ln_int.text()}
+                        Phonenumber: {self.next_mob_int.text()}
+                        Address: {self.next_addr_int.text()}
+                        Relationship: {self.next_rel_int.text()}
+                    Company:
+                        Name: {self.cn_int.text()}
+                        Telephone: {self.ct_int.text()}
+                        Address: {self.cadd_int.text()}
+                        
+                    Date of Registration: {self.dor.dateTime().toPyDateTime().strftime("%Y-%m-%d %H:%M:%S")}"""
+            db = self.params["db"].conn.cursor()
 
-            user = db.fetchone()
-            if user is None:
+            if not self.kwargs:
+                db.execute(
+                    """SELECT id FROM users WHERE name=?;""",
+                    (self.name.text().capitalize(),),
+                )
+
+                user = db.fetchone()
+                if user is None:
+                    msg.setIconPixmap(
+                        QPixmap(self.params["ctx"].get_resource("icon/question.png"))
+                    )
+                    msg.setText(f"Are you sure you want to register {name}?")
+                    msg.setWindowTitle("Account Creation")
+                    msg.setDetailedText(details)
+                    msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
+                    msg.setDefaultButton(QMessageBox.Yes)
+                    msg.buttonClicked.connect(self._handle_add_user)
+                else:
+                    msg.setIconPixmap(
+                        QPixmap(self.params["ctx"].get_resource("icon/error.png"))
+                    )
+                    msg.setText(f'An account with this name "{name}" already exists!')
+                    msg.setWindowTitle("Warning!")
+                    msg.setDefaultButton(QMessageBox.Ok)
+            else:
                 msg.setIconPixmap(
                     QPixmap(self.params["ctx"].get_resource("icon/question.png"))
                 )
-                msg.setText(f"Are you sure you want to register {name}?")
-                msg.setWindowTitle("Account Creation")
+                msg.setText(f"Are you sure you want to update {name}'s details?")
+                msg.setWindowTitle("Account Update")
                 msg.setDetailedText(details)
                 msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
                 msg.setDefaultButton(QMessageBox.Yes)
                 msg.buttonClicked.connect(self._handle_add_user)
-            else:
-                msg.setIconPixmap(
-                    QPixmap(self.params["ctx"].get_resource("icon/error.png"))
-                )
-                msg.setText(f'An account with this name "{name}" already exists!')
-                msg.setWindowTitle("Warning!")
-                msg.setDefaultButton(QMessageBox.Ok)
         else:
             msg.setIconPixmap(
-                QPixmap(self.params["ctx"].get_resource("icon/question.png"))
+                QPixmap(self.params["ctx"].get_resource("icon/error.png"))
             )
-            msg.setText(f"Are you sure you want to update {name}'s details?")
-            msg.setWindowTitle("Account Update")
-            msg.setDetailedText(details)
-            msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
-            msg.setDefaultButton(QMessageBox.Yes)
-            msg.buttonClicked.connect(self._handle_add_user)
+            msg.setText(f"Separate Firstname and Lastname with space.")
+            msg.setWindowTitle("Error")
+            msg.setDefaultButton(QMessageBox.Ok)
         msg.exec_()
         msg.show()
 
     def _handle_add_user(self, i):
         if i.text() == "&Yes":
             db = self.params["db"].conn.cursor()
+            name = self.name.text().split(" ")
+            img_name = "_".join(name)
+
             msg = QMessageBox()
             msg.setStyleSheet(
                 open(self.params["ctx"].get_resource("css/style.css")).read()
@@ -372,9 +381,9 @@ class ADD_USER(QWidget):
                     if not self.image_path == self.blank_image:
                         dest = shutil.copy(self.image_path, acc_img_path)
                         new_dest = (
-                            f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.png"
+                            f"{acc_img_path}\{img_name}.png"
                             if dest.endswith(".png")
-                            else f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.jpg"
+                            else f"{acc_img_path}\{img_name}.jpg"
                         )
                         os.rename(dest, new_dest)
                         save_image = new_dest
@@ -385,9 +394,9 @@ class ADD_USER(QWidget):
                     )
                     db.execute(
                         """INSERT INTO users (
-                            first_name,
-                            middle_name,
-                            last_name,
+                            name,
+                            account_number,
+                            shares,
                             phonenumber,
                             email,
                             address,
@@ -395,9 +404,9 @@ class ADD_USER(QWidget):
                             profile_picture,
                             date_created) VALUES (?,?,?,?,?,?,?,?,?);""",
                         (
-                            self.name.text().rstrip().capitalize(),
-                            self.acc_no.text().rstrip().capitalize(),
-                            self.shares.text().rstrip().capitalize(),
+                            self.name.text().rstrip(),
+                            self.acc_no.text().rstrip(),
+                            float(self.shares.text().rstrip().replace(",", "")),
                             self.mob_int.text().rstrip(),
                             self.email_int.text().rstrip(),
                             self.addr_int.text().rstrip().capitalize(),
@@ -473,9 +482,9 @@ class ADD_USER(QWidget):
                             os.remove(old_image)
                         dest = shutil.copy(self.image_path, acc_img_path)
                         new_dest = (
-                            f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.png"
+                            f"{acc_img_path}\{img_name}.png"
                             if dest.endswith(".png")
-                            else f"{acc_img_path}\{self.shares.text().rstrip().lower()}_{self.name.text().rstrip().lower()}.jpg"
+                            else f"{acc_img_path}\{img_name}.jpg"
                         )
                         os.rename(dest, new_dest)
                         save_image = new_dest
@@ -488,9 +497,9 @@ class ADD_USER(QWidget):
                 try:
                     db.execute(
                         """UPDATE users SET
-                            first_name=?,
-                            middle_name=?,
-                            last_name=?,
+                            name=?,
+                            account_number=?,
+                            shares=?,
                             phonenumber=?,
                             email=?,
                             address=?,
@@ -498,9 +507,9 @@ class ADD_USER(QWidget):
                             profile_picture=?
                             WHERE id=?;""",
                         (
-                            self.name.text().rstrip().capitalize(),
-                            self.acc_no.text().rstrip().capitalize(),
-                            self.shares.text().rstrip().capitalize(),
+                            self.name.text().rstrip(),
+                            self.acc_no.text().rstrip(),
+                            self.shares.text().rstrip(),
                             self.mob_int.text().rstrip(),
                             self.email_int.text().rstrip(),
                             self.addr_int.text().rstrip().capitalize(),

@@ -18,7 +18,7 @@ class WITHDRAWAL_FORM(QWidget):
 
         self.accounts = []
         for user in self.db.fetchall():
-            self.accounts.append(f"{user[3]} {user[1]}")
+            self.accounts.append(user[3])
         self.view()
 
     def view(self):
@@ -193,9 +193,11 @@ class WITHDRAWAL_FORM(QWidget):
         return table_view
 
     def _handle_main_combo_change(self, choice):
+        choice = choice.rstrip()
+        self.accCombo.setCurrentText(choice)
         if not choice == "" and not choice.lower() == "no account registered":
             try:
-                name = choice.split(" ")
+                name = choice
                 self.user = self._get_data_db(name)
 
                 self.fun.setText(self.user["fullname"])
@@ -466,12 +468,12 @@ class WITHDRAWAL_FORM(QWidget):
             self.withdraw_amt.setText(old_intr)
 
     def _get_data_db(self, selected):
-        if not selected[0] == "":
-            self.db.execute(
-                """SELECT * FROM users WHERE last_name=? AND first_name=?;""",
-                (selected[0], selected[1]),
-            )
-            user = self.db.fetchone()
+        self.db.execute(
+            """SELECT * FROM users WHERE name=?;""",
+            (selected,),
+        )
+        user = self.db.fetchone()
+        if not user is None:
             account = {
                 "id": user[0],
                 "fullname": f"{user[3]} {user[1]}",
@@ -546,11 +548,11 @@ class WITHDRAWAL_FORM(QWidget):
             user = []
             for item in guarantees:
                 self.db.execute(
-                    """SELECT first_name, last_name FROM users WHERE id=?;""",
+                    """SELECT name FROM users WHERE id=?;""",
                     (item[11],),
                 )
                 name = self.db.fetchone()
-                user.append(f"{name[1]} {name[0]}")
+                user.append(name[0])
                 user.append(item[1])
                 user.append(item[2])
                 user.append(item[3])

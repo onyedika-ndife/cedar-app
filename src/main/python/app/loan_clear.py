@@ -398,7 +398,7 @@ class LOAN_CLEAR(QDialog):
         user = self.db.fetchone()
         account = {
             "id": user[0],
-            "fullname": f"{user[3]} {user[1]}",
+            "fullname": user[3],
             "account_type": user[7].capitalize(),
             "status": user[8],
         }

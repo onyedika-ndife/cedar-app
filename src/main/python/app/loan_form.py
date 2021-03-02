@@ -19,7 +19,7 @@ class LOAN_FORM(QWidget):
 
         self.accounts = []
         for user in self.db.fetchall():
-            self.accounts.append(f"{user[3]} {user[1]}")
+            self.accounts.append(user[3])
         self.view()
 
     def view(self):
@@ -168,7 +168,7 @@ class LOAN_FORM(QWidget):
 
         child_grid_1.addWidget(self.guar_1_combo, 0, 1)
 
-        child_grid_1.addWidget(QLabel("Full Name:"), 1, 0)
+        child_grid_1.addWidget(QLabel("Fullname:"), 1, 0)
         self.guarantor_1_fn = QLabel("-")
         self.guarantor_1_fn.setObjectName("Loan")
         self.guarantor_1_fn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -244,7 +244,7 @@ class LOAN_FORM(QWidget):
 
         child_grid_1.addWidget(self.guar_2_combo, 0, 1)
 
-        child_grid_1.addWidget(QLabel("Full Name:"), 1, 0)
+        child_grid_1.addWidget(QLabel("Fullname:"), 1, 0)
         self.guarantor_2_fn = QLabel("-")
         self.guarantor_2_fn.setObjectName("Loan")
         self.guarantor_2_fn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -328,7 +328,7 @@ class LOAN_FORM(QWidget):
                 chosen = []
                 self.g1_lst = []
                 try:
-                    name = choice.split(" ")
+                    name = choice
                     data = self._get_data_db(name)
                     if not data is None:
                         self.fun.setText(data["fullname"])
@@ -431,7 +431,7 @@ class LOAN_FORM(QWidget):
             chosen = []
             self.g2_lst = []
             try:
-                name = i.split(" ")
+                name = i
                 data = self._get_data_db(name)
 
                 self.guarantor_1_fn.setText(data["fullname"])
@@ -499,7 +499,7 @@ class LOAN_FORM(QWidget):
     def _handle_two_combo_change(self, i):
         if not i == "":
             try:
-                name = i.split(" ")
+                name = i
                 data = self._get_data_db(name)
                 self.guarantor_2_fn.setText(data["fullname"])
                 self.guarantor_2_bal.setText("\u20A6 {:,}".format(int(data["balance"])))
@@ -560,10 +560,10 @@ class LOAN_FORM(QWidget):
         self.due_date = due_date.strftime("%Y-%m-%d")
 
     def _check_save(self):
-        name = self.fun.text().split(" ")
+        name = self.fun.text()
         self.db.execute(
-            """SELECT account_type FROM users WHERE last_name=? AND first_name=?;""",
-            (name[0], name[1]),
+            """SELECT account_type FROM users WHERE name=?;""",
+            (name,),
         )
         acc_type = self.db.fetchone()[0]
         self.db.execute("""SELECT * FROM settings WHERE account_type=?;""", (acc_type,))
@@ -620,7 +620,7 @@ class LOAN_FORM(QWidget):
     def _confirm_save(self, i):
         if i.text() == "&Yes":
             name = self.fun.text()
-            data = self._get_data_db(name.split(" "))
+            data = self._get_data_db(name)
             msg = QMessageBox()
             msg.setStyleSheet(
                 open(self.params["ctx"].get_resource("css/style.css")).read()
@@ -761,15 +761,15 @@ class LOAN_FORM(QWidget):
             self.loan_amt.setText(new_numb)
 
     def _get_data_db(self, selected):
-        if len(selected) == 2:
+        if not selected.lower() == "no account registered":
             self.db.execute(
-                """SELECT * FROM users WHERE last_name=? AND first_name=?;""",
-                (selected[0], selected[1]),
+                """SELECT * FROM users WHERE name=?;""",
+                (selected,),
             )
             user = self.db.fetchone()
             account = {
                 "id": user[0],
-                "fullname": f"{user[3]} {user[1]}",
+                "fullname": user[3],
                 "account_type": user[7],
                 "status": user[8],
             }

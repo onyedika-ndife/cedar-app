@@ -99,7 +99,7 @@ class USER_LIST(QWidget):
         header_layout.addWidget(btn_widget_0, 1, 0, alignment=Qt.AlignLeft)
 
         self.search_int_0 = QLineEdit()
-        self.search_int_0.setPlaceholderText("Search Member...")
+        self.search_int_0.setPlaceholderText("Search for Member...")
         self.search_int_0.setFixedWidth(300)
         header_layout.addWidget(self.search_int_0, 1, 1, alignment=Qt.AlignRight)
         member_wid_lay.addLayout(header_layout)
@@ -111,7 +111,7 @@ class USER_LIST(QWidget):
         header_layout.addWidget(btn_widget_1, 1, 0, alignment=Qt.AlignLeft)
 
         self.search_int_1 = QLineEdit()
-        self.search_int_1.setPlaceholderText("Search Staff...")
+        self.search_int_1.setPlaceholderText("Search for Staff...")
         self.search_int_1.setFixedWidth(300)
         header_layout.addWidget(self.search_int_1, 1, 1, alignment=Qt.AlignRight)
         staff_wid_lay.addLayout(header_layout)
@@ -158,17 +158,17 @@ class USER_LIST(QWidget):
         table_view.verticalHeader().setDefaultAlignment(Qt.AlignCenter)
 
         table_view.clicked.connect(lambda x: self._check(acc_type, x))
-        table_view.doubleClicked.connect(self._handle_doub_click)
+        table_view.doubleClicked.connect(self._handle_double_click)
 
         return table_view
 
-    def _handle_doub_click(self, i):
+    def _handle_double_click(self, i):
         if i.column() == 0:
             if not i.data() == "No Account Registered":
-                i = i.data().split(" ")
+                i = i.data()
                 self.db.execute(
-                    """SELECT id FROM users WHERE last_name=? AND first_name=?;""",
-                    (i[0], i[1]),
+                    """SELECT id FROM users WHERE name=?;""",
+                    (i,),
                 )
                 user_id = self.db.fetchone()[0]
                 view = USER(self.params, user_id)
@@ -237,7 +237,7 @@ class USER_LIST(QWidget):
         acc_type = "member" if account_type == 0 else "staff"
         self.db = self.params["db"].conn.cursor()
         self.db.execute(
-            """SELECT id, first_name, last_name FROM users WHERE account_type=? ORDER BY last_name ASC;""",
+            """SELECT id, name FROM users WHERE account_type=? ORDER BY name ASC;""",
             (acc_type,),
         )
         users = self.db.fetchall()
@@ -248,9 +248,7 @@ class USER_LIST(QWidget):
                     """SELECT total FROM savings WHERE user_id=?;""", (user[0],)
                 )
                 user_acc_bal = self.db.fetchone()[0]
-                self.table_data[account_type][1].append(
-                    [f"{user[2]} {user[1]}", user_acc_bal]
-                )
+                self.table_data[account_type][1].append([f"{user[1]}", user_acc_bal])
         else:
             self.table_data[account_type][1] = [
                 [
@@ -312,10 +310,9 @@ class USER_LIST(QWidget):
             _list = self.selected_list_0 if acc_type == 0 else self.selected_list_1
 
             for user in _list:
-                name = user.split(" ")
                 self.db.execute(
-                    """SELECT id, profile_picture FROM users WHERE last_name=? AND first_name=?;""",
-                    (name[0], name[1]),
+                    """SELECT id, profile_picture FROM users WHERE name=?;""",
+                    (user,),
                 )
                 usr = self.db.fetchone()
 

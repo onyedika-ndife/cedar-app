@@ -226,11 +226,11 @@ class USER_LDW(QWidget):
         data = []
         self.db = self.params["db"].conn.cursor()
         self.db.execute(
-            """SELECT first_name,last_name FROM users WHERE id=?;""",
+            """SELECT name FROM users WHERE id=?;""",
             (self.user_id,),
         )
         name = self.db.fetchone()
-        self.user = f"{name[1]} {name[0]}"
+        self.user = name[0]
 
         if self.context == "loans":
             self.db.execute(
