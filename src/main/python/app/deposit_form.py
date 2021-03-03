@@ -252,97 +252,9 @@ class DEPOSIT_FORM(QDialog):
 
         if not py_date < today:
             deposit_interval = IntervalTrigger(
-                seconds=1,
+                days=1,
                 start_date=interest_start.strftime("%Y-%m-%d %H:%M:%S"),
             )
-            self.params["qtsched"].add_job(
-                self.interest_schedule,
-                trigger=deposit_interval,
-                args=[
-                    user_id,
-                    last_deposit_id,
-                ],
-                id=f"dep_{last_deposit_id} interest schedule",
-                replace_existing=True,
-            )
-        else:
-            num_days = today - py_date
-            self.db.execute(
-                """SELECT account_type FROM users WHERE id=?;""", (user_id,)
-            )
-            account_type = self.db.fetchone()[0]
-            self.db.execute(
-                """SELECT interest_rate FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
-                (account_type,),
-            )
-            interest_rate = self.db.fetchone()[0]
-            interest_rate_per_day = float(interest_rate) / 100 / 365
-
-            interest_per_num_days = (
-                float(interest_rate_per_day) * float(num_days.days) * float(amount)
-            )
-
-            self.db.execute(
-                """SELECT id FROM deposit_interest WHERE deposit_id=? AND user_id=? ORDER BY id DESC LIMIT 1;""",
-                (
-                    last_deposit_id,
-                    user_id,
-                ),
-            )
-            dep_intr_id = self.db.fetchone()[0]
-
-            self.db.execute(
-                f"""UPDATE deposit_interest SET
-                    amount=?,
-                    interest=?,
-                    date_interest_start=?,
-                    date_last_interest=?,
-                    run_time=? WHERE id=? AND deposit_id=? AND user_id=?;""",
-                (
-                    amount,
-                    round(interest_per_num_days),
-                    interest_start,
-                    today,
-                    num_days.days,
-                    dep_intr_id,
-                    last_deposit_id,
-                    user_id,
-                ),
-            )
-
-            self.db.execute(
-                """SELECT interest_earned, total
-                    FROM savings WHERE user_id=?;""",
-                (user_id,),
-            )
-            sav_intr = self.db.fetchone()
-
-            intr_earned = sav_intr[0]
-            total = sav_intr[1]
-
-            intr_earned += round(interest_per_num_days)
-            total += round(interest_per_num_days)
-
-            self.db.execute(
-                """UPDATE savings SET
-                    interest_earned=?,
-                    total=?,
-                    date_updated=? WHERE user_id=?;""",
-                (
-                    round(intr_earned),
-                    round(total),
-                    datetime.today().now().strftime("%Y-%m-%d %H:%M:%S"),
-                    user_id,
-                ),
-            )
-            self.params["db"].conn.commit()
-
-            tomorrow = today + timedelta(days=1)
-            deposit_interval = IntervalTrigger(
-                days=1,
-                start_date=tomorrow.strftime("%Y-%m-%d %H:%M:%S"),
-            )
-
             self.params["qtsched"].add_job(
                 self.interest_schedule,
                 trigger=deposit_interval,

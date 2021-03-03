@@ -693,63 +693,6 @@ class LOAN_FORM(QWidget):
                 id=f"{name} loan schedule",
                 replace_existing=True,
             )
-        else:
-            num_mon = today - start_date
-            num_mon = num_mon.days / 30.417
-            num_mon = round(num_mon)
-            self.db.execute(
-                """SELECT account_type, status FROM users WHERE id=?;""", (user_id,)
-            )
-            account = self.db.fetchone()
-            self.db.execute(
-                """SELECT loan_rate FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
-                (account[0],),
-            )
-            loan_rate = self.db.fetchone()[0]
-
-            self.db.execute(
-                """SELECT * FROM loans
-                    WHERE id=? AND user_id=?;""",
-                (
-                    loan_id,
-                    user_id,
-                ),
-            )
-            loan = self.db.fetchone()
-
-            if not loan is None:
-                amount = loan[1]
-                old_curr_lia = loan[5]
-
-                due_date = datetime.strptime(loan[8], "%Y-%m-%d").date()
-                date_issued = datetime.strptime(loan[9], "%Y-%m-%d").date()
-                run_time = due_date - date_issued
-                run_time = run_time.days / 30.417
-
-                interest_per_month = (
-                    float(amount) * int(loan_rate) / 100 * round(run_time)
-                )
-                new_curr_lia = float(old_curr_lia) + float(interest_per_month)
-
-                self.db.execute(
-                    """UPDATE loans SET
-                        current_liability=?, run_time=?
-                        WHERE id=? AND user_id=?;""",
-                    (
-                        new_curr_lia,
-                        round(run_time),
-                        loan_id,
-                        user_id,
-                    ),
-                )
-
-                self.db.execute(
-                    """UPDATE users SET
-                        status=? WHERE id=?""",
-                    ("inactive", user_id),
-                )
-
-                self.params["db"].conn.commit()
 
     def _clear_all(self):
         self.params["parent"]["back_btn"].click()
