@@ -87,7 +87,12 @@ class IMPORT(QDialog):
                     if name[-1] == "***" or name[-1].lower() == "xxx"
                     else "active"
                 )
-                name = " ".join(name[:-1])
+                name = [item.capitalize() for item in name]
+                name = " ".join(
+                    name[:-1]
+                    if name[-1] == "***" or name[-1].lower() == "xxx"
+                    else name
+                )
 
                 db.execute("""SELECT id FROM users WHERE name=?;""", (name,))
                 current_user = db.fetchone()
@@ -150,9 +155,9 @@ class IMPORT(QDialog):
                         # -------------------------------------
                         deposit_date = (
                             datetime.strptime(
-                                row["DATE (SAVINGS CREDIT"], "%d/%m/%Y"
+                                row["DATE (SAVINGS CREDIT)"], "%d/%m/%Y"
                             ).strftime("%Y-%m-%d")
-                            if not row["DATE (SAVINGS CREDIT"] == ""
+                            if not row["DATE (SAVINGS CREDIT)"] == ""
                             else datetime.now().strftime("%Y-%m-%d")
                         )
                         savings_date = (

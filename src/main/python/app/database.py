@@ -43,23 +43,21 @@ class DataBase:
                 account_number TEXT NOT NULL,
                 shares REAL DEFAULT 0 NOT NULL,
                 name TEXT NOT NULL,
-                phonenumber TEXT,
-                email TEXT, 
-                address TEXT,
+                phonenumber TEXT DEFAULT "",
+                email TEXT DEFAULT "", 
+                address TEXT DEFAULT "",
                 account_type TEXT NOT NULL,
                 status TEXT DEFAULT "active" NOT NULL,
-                profile_picture TEXT,
+                profile_picture TEXT DEFAULT "",
                 date_created TIMESTAMP NOT NULL);"""
         )
         db.execute(
             """CREATE TABLE IF NOT EXISTS next_of_kin (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                first_name TEXT,
-                middle_name TEXT,
-                last_name TEXT,
-                phonenumber TEXT,
-                address TEXT,
-                relationship TEXT,
+                name TEXT DEFAULT "",
+                phonenumber TEXT DEFAULT "",
+                address TEXT DEFAULT "",
+                relationship TEXT DEFAULT "",
                 user_id INTEGER NOT NULL,
                 FOREIGN KEY (user_id)
                 REFERENCES users (id)
@@ -71,9 +69,9 @@ class DataBase:
         db.execute(
             """CREATE TABLE IF NOT EXISTS company (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                telephone TEXT,
-                address TEXT,
+                name TEXT DEFAULT "",
+                telephone TEXT DEFAULT "",
+                address TEXT DEFAULT "",
                 user_id INTEGER NOT NULL,
                 FOREIGN KEY (user_id)
                 REFERENCES users (id)

@@ -100,26 +100,20 @@ class ADD_USER(QWidget):
         group_4.setLayout(group_4_layout)
 
         self.next_fn_int = QLineEdit()
-        self.next_mn_int = QLineEdit()
-        self.next_ln_int = QLineEdit()
         self.next_mob_int = QLineEdit()
         self.next_addr_int = QLineEdit()
         self.next_rel_int = QLineEdit()
 
         self.next_mob_int.setValidator(QDoubleValidator())
 
-        group_4_layout.addWidget(QLabel("First name"), 0, 0)
+        group_4_layout.addWidget(QLabel("Name"), 0, 0)
         group_4_layout.addWidget(self.next_fn_int, 0, 1)
-        group_4_layout.addWidget(QLabel("Middle name"), 1, 0)
-        group_4_layout.addWidget(self.next_mn_int, 1, 1)
-        group_4_layout.addWidget(QLabel("Last name"), 2, 0)
-        group_4_layout.addWidget(self.next_ln_int, 2, 1)
-        group_4_layout.addWidget(QLabel("Mobile"), 3, 0)
-        group_4_layout.addWidget(self.next_mob_int, 3, 1)
-        group_4_layout.addWidget(QLabel("Residential address"), 4, 0)
-        group_4_layout.addWidget(self.next_addr_int, 4, 1)
-        group_4_layout.addWidget(QLabel("Relationship"), 5, 0)
-        group_4_layout.addWidget(self.next_rel_int, 5, 1)
+        group_4_layout.addWidget(QLabel("Mobile"), 1, 0)
+        group_4_layout.addWidget(self.next_mob_int, 1, 1)
+        group_4_layout.addWidget(QLabel("Residential address"), 2, 0)
+        group_4_layout.addWidget(self.next_addr_int, 2, 1)
+        group_4_layout.addWidget(QLabel("Relationship"), 3, 0)
+        group_4_layout.addWidget(self.next_rel_int, 3, 1)
 
         group_5 = QGroupBox("Company")
         group_5_layout = QGridLayout()
@@ -202,8 +196,6 @@ class ADD_USER(QWidget):
                 else self.blank_image
             )
 
-            nok_name = user["next_of_kin"]["Name"].split(" ")
-
             if user["details"]["Account Type"] == "Member":
                 self.option_1.setChecked(True)
             else:
@@ -219,13 +211,8 @@ class ADD_USER(QWidget):
             self.email_int.setText(user["details"]["Email"])
             self.mob_int.setText(user["details"]["Phonenumber"])
             self.addr_int.setText(user["details"]["Address"])
-            if len(nok_name) == 3:
-                self.next_fn_int.setText(nok_name[2])
-                self.next_mn_int.setText(nok_name[1])
-                self.next_ln_int.setText(nok_name[0])
-            elif len(nok_name) == 2:
-                self.next_fn_int.setText(nok_name[1])
-                self.next_ln_int.setText(nok_name[0])
+
+            self.next_fn_int.setText(user["next_of_kin"]["Name"])
 
             self.next_mob_int.setText(user["next_of_kin"]["Phonenumber"])
             self.next_addr_int.setText(user["next_of_kin"]["Address"])
@@ -288,7 +275,6 @@ class ADD_USER(QWidget):
             self.save_btn.setDisabled(True)
 
     def _confirm_save(self):
-        name = self.name.text().split(" ")
         msg = QMessageBox()
         msg.setStyleSheet(open(self.params["ctx"].get_resource("css/style.css")).read())
         if len(name) >= 2:
@@ -296,7 +282,7 @@ class ADD_USER(QWidget):
             self.acc_type = "member" if self.option_1.isChecked() else "staff"
             details = f"""The details are as follows:
                     
-                    Name: {name}
+                    Name: {self.name.text()}
                     Account Number: {self.acc_no.text()}
                     Shares: {self.shares.text()}
                     Phonenumber: {self.mob_int.text()}
@@ -304,9 +290,7 @@ class ADD_USER(QWidget):
                     Address: {self.addr_int.text()}
                     Account Type: {self.acc_type}
                     Next of Kin:
-                        First Name: {self.next_fn_int.text()}
-                        Middle Name: {self.next_mn_int.text()}
-                        Last Name: {self.next_ln_int.text()}
+                        Fullname: {self.next_fn_int.text()}
                         Phonenumber: {self.next_mob_int.text()}
                         Address: {self.next_addr_int.text()}
                         Relationship: {self.next_rel_int.text()}
@@ -321,7 +305,7 @@ class ADD_USER(QWidget):
             if not self.kwargs:
                 db.execute(
                     """SELECT id FROM users WHERE name=?;""",
-                    (self.name.text().capitalize(),),
+                    (self.name.text(),),
                 )
 
                 user = db.fetchone()
@@ -423,17 +407,13 @@ class ADD_USER(QWidget):
                     user = db.fetchone()
                     db.execute(
                         """INSERT INTO next_of_kin (
-                            first_name,
-                            middle_name,
-                            last_name,
+                            name,
                             phonenumber,
                             address,
                             relationship,
                             user_id) VALUES (?,?,?,?,?,?,?);""",
                         (
                             self.next_fn_int.text().rstrip().capitalize(),
-                            self.next_mn_int.text().rstrip().capitalize(),
-                            self.next_ln_int.text().rstrip().capitalize(),
                             self.next_mob_int.text().rstrip(),
                             self.next_addr_int.text().rstrip().capitalize(),
                             self.next_rel_int.text().rstrip().capitalize(),
@@ -520,16 +500,12 @@ class ADD_USER(QWidget):
                     )
                     db.execute(
                         """UPDATE next_of_kin SET
-                            first_name=?,
-                            middle_name=?,
-                            last_name=?,
+                            name=?,
                             phonenumber=?,
                             address=?,
                             relationship=? WHERE user_id=?;""",
                         (
                             self.next_fn_int.text().rstrip().capitalize(),
-                            self.next_mn_int.text().rstrip().capitalize(),
-                            self.next_ln_int.text().rstrip().capitalize(),
                             self.next_mob_int.text().rstrip(),
                             self.next_addr_int.text().rstrip().capitalize(),
                             self.next_rel_int.text().rstrip().capitalize(),
@@ -579,8 +555,6 @@ class ADD_USER(QWidget):
         self.mob_int.clear()
         self.addr_int.clear()
         self.next_fn_int.clear()
-        self.next_mn_int.clear()
-        self.next_ln_int.clear()
         self.next_mob_int.clear()
         self.next_addr_int.clear()
         self.next_rel_int.clear()
