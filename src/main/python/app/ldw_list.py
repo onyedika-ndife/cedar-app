@@ -466,11 +466,11 @@ class LDWTABLE(QAbstractTableModel):
                 return value.strftime("%B %d, %Y")
             if isinstance(value, float):
                 if self.context == "loans" or self.context == "clear_loans":
-                    return "\u20A6 {:,}".format(float(value))
+                    return "\u20A6 {:,}".format(float(round(value, 2)))
                 elif self.context == "deposits":
-                    return "+\u20A6 {:,}".format(float(value))
+                    return "+\u20A6 {:,}".format(float(round(value, 2)))
                 elif self.context == "withdrawals":
-                    return "-\u20A6 {:,}".format(float(value))
+                    return "-\u20A6 {:,}".format(float(round(value, 2)))
             if self._data[0][0] == "ERROR":
                 return self._data[0][1]
             return value
@@ -532,7 +532,10 @@ class LDWTABLE(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        self._data.sort(reverse=order)
+        if order == Qt.DescendingOrder:
+            self._data.sort()
+        else:
+            self._data.reverse()
         self.layoutChanged.emit()
 
     def rowCount(self, index):

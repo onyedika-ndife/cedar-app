@@ -685,7 +685,7 @@ class WITHDRAWFORMTABLE(QAbstractTableModel):
                 if isinstance(value, datetime):
                     return value.strftime("%B %d, %Y")
                 if isinstance(value, float):
-                    return "\u20A6 {:,}".format(float(value))
+                    return "\u20A6 {:,}".format(float(round(value, 2)))
                 return value
             if role == Qt.TextAlignmentRole:
                 if (
@@ -730,7 +730,10 @@ class WITHDRAWFORMTABLE(QAbstractTableModel):
     def sort(self, column, order):
         if not self._data is None:
             self.layoutAboutToBeChanged.emit()
-            self._data.sort(reverse=order)
+            if order == Qt.DescendingOrder:
+                self._data.sort()
+            else:
+                self._data.reverse()
             self.layoutChanged.emit()
 
     def rowCount(self, index):

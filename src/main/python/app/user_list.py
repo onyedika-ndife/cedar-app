@@ -434,7 +434,7 @@ class USERLISTTABLE(QAbstractTableModel):
             if not self._data[0][0] == "ERROR":
                 if role == Qt.DisplayRole:
                     if isinstance(value, float):
-                        return "\u20A6 {:,}".format(int(value))
+                        return "\u20A6 {:,}".format(float(round(value, 2)))
                     return value
                 elif role == Qt.TextAlignmentRole:
                     if index.column() == 1:
@@ -469,7 +469,11 @@ class USERLISTTABLE(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        self._data.sort(reverse=order)
+        if order == Qt.DescendingOrder:
+            self._data.sort()
+        else:
+            self._data.reverse()
+
         self.layoutChanged.emit()
 
     def rowCount(self, parent=QModelIndex()):

@@ -384,10 +384,13 @@ class USER(QWidget):
         }
         self.db.execute("""SELECT * FROM users WHERE id=?;""", (self.user_id,))
         for item in self.db.fetchall():
+            print(item[2])
             account["details"]["Image"] = item[9]
             account["details"]["Account Number"] = item[1]
             account["details"]["Name"] = f"{item[3]}"
-            account["details"]["Shares"] = "\u20A6 {:,}".format(int(item[2]))
+            account["details"]["Shares"] = "\u20A6 {:,}".format(
+                float(round(item[2] if not item[2] == "" else 0.0, 2))
+            )
             account["details"]["Account Type"] = item[7].capitalize()
             account["details"]["Phonenumber"] = item[4]
             account["details"]["Email"] = item[5]
@@ -401,10 +404,10 @@ class USER(QWidget):
             """SELECT * FROM next_of_kin WHERE user_id=?;""", (self.user_id,)
         )
         for item in self.db.fetchall():
-            account["next_of_kin"]["Name"] = f"{item[3]} {item[1]}"
-            account["next_of_kin"]["Phonenumber"] = item[4]
-            account["next_of_kin"]["Address"] = item[5]
-            account["next_of_kin"]["Relationship"] = item[6]
+            account["next_of_kin"]["Name"] = item[1]
+            account["next_of_kin"]["Phonenumber"] = item[2]
+            account["next_of_kin"]["Address"] = item[3]
+            account["next_of_kin"]["Relationship"] = item[4]
 
         self.db.execute("""SELECT * FROM company WHERE user_id=?;""", (self.user_id,))
         for item in self.db.fetchall():
@@ -414,9 +417,15 @@ class USER(QWidget):
 
         self.db.execute("""SELECT * FROM savings WHERE user_id=?;""", (self.user_id,))
         for item in self.db.fetchall():
-            account["savings"]["Balance"] = "\u20A6 {:,}".format(int(item[1]))
-            account["savings"]["Interest Earned"] = "\u20A6 {:,}".format(int(item[2]))
-            account["savings"]["Total Amount"] = "\u20A6 {:,}".format(int(item[3]))
+            account["savings"]["Balance"] = "\u20A6 {:,}".format(
+                float(round(item[1], 2))
+            )
+            account["savings"]["Interest Earned"] = "\u20A6 {:,}".format(
+                float(round(item[2], 2))
+            )
+            account["savings"]["Total Amount"] = "\u20A6 {:,}".format(
+                float(round(item[3], 2))
+            )
             account["savings"]["Last Updated"] = datetime.strptime(
                 item[4], "%Y-%m-%d %H:%M:%S"
             ).strftime("%b %d, %Y  %H:%M")
@@ -427,12 +436,16 @@ class USER(QWidget):
         )
         loan = self.db.fetchone()
         if not loan is None:
-            account["last_loan"]["Amount"] = "\u20A6 {:,}".format(int(loan[1]))
+            account["last_loan"]["Amount"] = "\u20A6 {:,}".format(
+                float(round(loan[1], 2))
+            )
             account["last_loan"]["First Guarantor"] = loan[2]
             account["last_loan"]["Second Guarantor"] = loan[3]
-            account["last_loan"]["Clear Amount"] = "\u20A6 {:,}".format(int(loan[4]))
+            account["last_loan"]["Clear Amount"] = "\u20A6 {:,}".format(
+                float(round(loan[4], 2))
+            )
             account["last_loan"]["Current Liability"] = "\u20A6 {:,}".format(
-                int(loan[5])
+                float(round(loan[5], 2))
             )
             account["last_loan"]["Loan Status"] = loan[6].capitalize()
             account["last_loan"]["Loan Duration"] = loan[7].capitalize()
@@ -449,7 +462,7 @@ class USER(QWidget):
         )
         deposit = self.db.fetchone()
         if not deposit is None:
-            account["last_deposit"]["Amount"] = "\u20A6 {:,}".format(int(deposit[1]))
+            account["last_deposit"]["Amount"] = "\u20A6 {:,}".format(float(deposit[1]))
             account["last_deposit"]["Date Deposited"] = datetime.strptime(
                 deposit[2], "%Y-%m-%d"
             ).strftime("%b %d, %Y")
@@ -461,7 +474,7 @@ class USER(QWidget):
         withdrawal = self.db.fetchone()
         if not withdrawal is None:
             account["last_withdrawal"]["Amount"] = "\u20A6 {:,}".format(
-                int(withdrawal[1])
+                float(round(withdrawal[1], 2))
             )
             account["last_withdrawal"]["Date Withdrawn"] = datetime.strptime(
                 withdrawal[3], "%Y-%m-%d"

@@ -672,11 +672,11 @@ class LDWUSERTABLE(QAbstractTableModel):
                 return value.strftime("%B %d, %Y")
             if isinstance(value, float):
                 if self.context == "loans":
-                    return "\u20A6 {:,}".format(float(value))
+                    return "\u20A6 {:,}".format(float(round(value, 2)))
                 elif self.context == "deposits":
-                    return "+\u20A6 {:,}".format(float(value))
+                    return "+\u20A6 {:,}".format(float(round(value, 2)))
                 elif self.context == "withdrawals":
-                    return "-\u20A6 {:,}".format(float(value))
+                    return "-\u20A6 {:,}".format(float(round(value, 2)))
             return value
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter
@@ -729,7 +729,10 @@ class LDWUSERTABLE(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        self._data.sort(reverse=order)
+        if order == Qt.DescendingOrder:
+            self._data.sort()
+        else:
+            self._data.reverse()
         self.layoutChanged.emit()
 
     def rowCount(self, parent=QModelIndex()):
