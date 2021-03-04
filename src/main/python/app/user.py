@@ -28,7 +28,13 @@ class USER(QWidget):
         btn_layout.setContentsMargins(0, 0, 0, 0)
         btn_widget.setLayout(btn_layout)
         set_stat_btn = QPushButton(
-            QIcon(self.params["ctx"].get_resource("icon/edit_profile.png")),
+            QIcon(
+                self.params["ctx"].get_resource(
+                    "icon/user_inactive.png"
+                    if self.account["details"]["Account Status"].lower() == "active"
+                    else "icon/user_active.png"
+                )
+            ),
             "Set Inactive"
             if self.account["details"]["Account Status"].lower() == "active"
             else "Set Active",

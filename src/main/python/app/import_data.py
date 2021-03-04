@@ -25,8 +25,16 @@ class IMPORT(QDialog):
 
     def _view(self):
         initial_layout = QVBoxLayout()
-        upload_btn = QPushButton("Import Data via CSV")
-        download_btn = QPushButton("View CSV Sample")
+        upload_btn = QPushButton(
+            QIcon(self.params["ctx"].get_resource("icon/upload.png")),
+            "Import Data via CSV",
+        )
+        upload_btn.setIconSize(QSize(50, 50))
+
+        download_btn = QPushButton(
+            QIcon(self.params["ctx"].get_resource("icon/download.png")),
+            "View CSV Sample",
+        )
 
         initial_layout.addWidget(upload_btn)
         initial_layout.addWidget(download_btn)

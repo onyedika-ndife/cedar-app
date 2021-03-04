@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         setting_btn.clicked.connect(self._handle_setting)
 
         imp_data_btn = QPushButton(
-            QIcon(self.params["ctx"].get_resource("icon/settings.png")), "Import Data"
+            QIcon(self.params["ctx"].get_resource("icon/import.png")), "Import Data"
         )
         imp_data_btn.setIconSize(QSize(20, 20))
         imp_data_btn.clicked.connect(self._handle_imp_data)
