@@ -86,6 +86,7 @@ class IMPORT(QDialog):
         db = self.params["db"].conn.cursor()
         msg = QMessageBox()
         msg.setStyleSheet(open(self.params["ctx"].get_resource("css/style.css")).read())
+        msg.setWindowFlags(Qt.WindowStaysOnTopHint)
         with open(file_path) as csv_file:
             csv_reader = csv.DictReader(csv_file)
             row_count = 0
