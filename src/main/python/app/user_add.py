@@ -105,6 +105,9 @@ class ADD_USER(QWidget):
         self.next_rel_int = QLineEdit()
 
         self.next_mob_int.setValidator(QDoubleValidator())
+        self.next_fn_int.textChanged.connect(
+            lambda: self._capitalize(self.next_fn_int, "name")
+        )
 
         group_4_layout.addWidget(QLabel("Name"), 0, 0)
         group_4_layout.addWidget(self.next_fn_int, 0, 1)
@@ -238,7 +241,7 @@ class ADD_USER(QWidget):
     def _calc(self, number):
         if not number == "":
             number = number.replace(",", "")
-            new_numb = "{:,}".format(int(number))
+            new_numb = "{:,}".format(float(number))
             self.shares.setText(new_numb)
 
     def _get_image(self):
@@ -277,65 +280,80 @@ class ADD_USER(QWidget):
     def _confirm_save(self):
         msg = QMessageBox()
         msg.setStyleSheet(open(self.params["ctx"].get_resource("css/style.css")).read())
+        name = self.name.text().split(" ")
+        nok_name = self.next_fn_int.text().split(" ")
         if len(name) >= 2:
-            name = " ".join(name)
-            self.acc_type = "member" if self.option_1.isChecked() else "staff"
-            details = f"""The details are as follows:
-                    
-                    Name: {self.name.text()}
-                    Account Number: {self.acc_no.text()}
-                    Shares: {self.shares.text()}
-                    Phonenumber: {self.mob_int.text()}
-                    Email: {self.email_int.text()}
-                    Address: {self.addr_int.text()}
-                    Account Type: {self.acc_type}
-                    Next of Kin:
-                        Fullname: {self.next_fn_int.text()}
-                        Phonenumber: {self.next_mob_int.text()}
-                        Address: {self.next_addr_int.text()}
-                        Relationship: {self.next_rel_int.text()}
-                    Company:
-                        Name: {self.cn_int.text()}
-                        Telephone: {self.ct_int.text()}
-                        Address: {self.cadd_int.text()}
+            if nok_name[0] == "" or (not nok_name[0] == "" and len(nok_name) >= 2):
+                name = " ".join(name)
+                nok_name = " ".join(nok_name)
+                self.acc_type = "member" if self.option_1.isChecked() else "staff"
+                details = f"""The details are as follows:
                         
-                    Date of Registration: {self.dor.dateTime().toPyDateTime().strftime("%Y-%m-%d %H:%M:%S")}"""
-            db = self.params["db"].conn.cursor()
+                        Name: {name}
+                        Account Number: {self.acc_no.text()}
+                        Shares: {self.shares.text()}
+                        Phonenumber: {self.mob_int.text()}
+                        Email: {self.email_int.text()}
+                        Address: {self.addr_int.text()}
+                        Account Type: {self.acc_type}
+                        Next of Kin:
+                            Fullname: {nok_name}
+                            Phonenumber: {self.next_mob_int.text()}
+                            Address: {self.next_addr_int.text()}
+                            Relationship: {self.next_rel_int.text()}
+                        Company:
+                            Name: {self.cn_int.text()}
+                            Telephone: {self.ct_int.text()}
+                            Address: {self.cadd_int.text()}
+                            
+                        Date of Registration: {self.dor.dateTime().toPyDateTime().strftime("%Y-%m-%d %H:%M:%S")}"""
+                db = self.params["db"].conn.cursor()
 
-            if not self.kwargs:
-                db.execute(
-                    """SELECT id FROM users WHERE name=?;""",
-                    (self.name.text(),),
-                )
+                if not self.kwargs:
+                    db.execute(
+                        """SELECT id FROM users WHERE name=?;""",
+                        (self.name.text(),),
+                    )
 
-                user = db.fetchone()
-                if user is None:
+                    user = db.fetchone()
+                    if user is None:
+                        msg.setIconPixmap(
+                            QPixmap(
+                                self.params["ctx"].get_resource("icon/question.png")
+                            )
+                        )
+                        msg.setText(f"Are you sure you want to register {name}?")
+                        msg.setWindowTitle("Account Creation")
+                        msg.setDetailedText(details)
+                        msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
+                        msg.setDefaultButton(QMessageBox.Yes)
+                        msg.buttonClicked.connect(self._handle_add_user)
+                    else:
+                        msg.setIconPixmap(
+                            QPixmap(self.params["ctx"].get_resource("icon/error.png"))
+                        )
+                        msg.setText(
+                            f'An account with this name "{name}" already exists!'
+                        )
+                        msg.setWindowTitle("Warning!")
+                        msg.setDefaultButton(QMessageBox.Ok)
+                else:
                     msg.setIconPixmap(
                         QPixmap(self.params["ctx"].get_resource("icon/question.png"))
                     )
-                    msg.setText(f"Are you sure you want to register {name}?")
-                    msg.setWindowTitle("Account Creation")
+                    msg.setText(f"Are you sure you want to update {name}'s details?")
+                    msg.setWindowTitle("Account Update")
                     msg.setDetailedText(details)
                     msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
                     msg.setDefaultButton(QMessageBox.Yes)
                     msg.buttonClicked.connect(self._handle_add_user)
-                else:
-                    msg.setIconPixmap(
-                        QPixmap(self.params["ctx"].get_resource("icon/error.png"))
-                    )
-                    msg.setText(f'An account with this name "{name}" already exists!')
-                    msg.setWindowTitle("Warning!")
-                    msg.setDefaultButton(QMessageBox.Ok)
             else:
                 msg.setIconPixmap(
-                    QPixmap(self.params["ctx"].get_resource("icon/question.png"))
+                    QPixmap(self.params["ctx"].get_resource("icon/error.png"))
                 )
-                msg.setText(f"Are you sure you want to update {name}'s details?")
-                msg.setWindowTitle("Account Update")
-                msg.setDetailedText(details)
-                msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
-                msg.setDefaultButton(QMessageBox.Yes)
-                msg.buttonClicked.connect(self._handle_add_user)
+                msg.setText(f"Separate Firstname and Lastname with space.")
+                msg.setWindowTitle("Error")
+                msg.setDefaultButton(QMessageBox.Ok)
         else:
             msg.setIconPixmap(
                 QPixmap(self.params["ctx"].get_resource("icon/error.png"))
@@ -411,9 +429,9 @@ class ADD_USER(QWidget):
                             phonenumber,
                             address,
                             relationship,
-                            user_id) VALUES (?,?,?,?,?,?,?);""",
+                            user_id) VALUES (?,?,?,?,?);""",
                         (
-                            self.next_fn_int.text().rstrip().capitalize(),
+                            self.next_fn_int.text().rstrip(),
                             self.next_mob_int.text().rstrip(),
                             self.next_addr_int.text().rstrip().capitalize(),
                             self.next_rel_int.text().rstrip().capitalize(),
@@ -448,6 +466,7 @@ class ADD_USER(QWidget):
                     msg.setText(f"Account creation successful")
                     msg.buttonClicked.connect(self._clear_all)
                 except Exception as e:
+                    print(e)
                     msg.setIconPixmap(
                         QPixmap(self.params["ctx"].get_resource("icon/error.png"))
                     )
@@ -489,7 +508,7 @@ class ADD_USER(QWidget):
                         (
                             self.name.text().rstrip(),
                             self.acc_no.text().rstrip(),
-                            self.shares.text().rstrip(),
+                            float(self.shares.text().rstrip().replace(",", "")),
                             self.mob_int.text().rstrip(),
                             self.email_int.text().rstrip(),
                             self.addr_int.text().rstrip().capitalize(),
@@ -505,7 +524,7 @@ class ADD_USER(QWidget):
                             address=?,
                             relationship=? WHERE user_id=?;""",
                         (
-                            self.next_fn_int.text().rstrip().capitalize(),
+                            self.next_fn_int.text().rstrip(),
                             self.next_mob_int.text().rstrip(),
                             self.next_addr_int.text().rstrip().capitalize(),
                             self.next_rel_int.text().rstrip().capitalize(),

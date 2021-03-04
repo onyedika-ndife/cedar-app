@@ -27,6 +27,14 @@ class USER(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.setContentsMargins(0, 0, 0, 0)
         btn_widget.setLayout(btn_layout)
+        set_stat_btn = QPushButton(
+            QIcon(self.params["ctx"].get_resource("icon/edit_profile.png")),
+            "Set Inactive"
+            if self.account["details"]["Account Status"].lower() == "active"
+            else "Set Active",
+        )
+        set_stat_btn.setToolTip("Set account status")
+
         edit_btn = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/edit_profile.png")),
             "Edit Account",
@@ -38,17 +46,23 @@ class USER(QWidget):
         )
         delete_btn.setToolTip("Delete current account")
 
+        set_stat_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         edit_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         delete_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
         header = QLabel("Account Details")
         header.setObjectName("Header")
 
         btn_layout.addWidget(header, alignment=Qt.AlignLeft)
-        btn_layout.addWidget(edit_btn, alignment=Qt.AlignRight)
+        btn_layout.addWidget(set_stat_btn, alignment=Qt.AlignRight)
+        btn_layout.addWidget(edit_btn)
         btn_layout.addWidget(delete_btn)
 
         initial_layout.addWidget(btn_widget)
 
+        set_stat_btn.clicked.connect(
+            lambda: self._handle_toolbar_btn({"text": "status"})
+        )
         edit_btn.clicked.connect(lambda: self._handle_toolbar_btn({"text": "edit"}))
         delete_btn.clicked.connect(lambda: self._handle_toolbar_btn({"text": "delete"}))
 
@@ -69,53 +83,49 @@ class USER(QWidget):
         picture = QLabel()
         picture.setScaledContents(True)
         picture.setFixedSize(150, 150)
-        pro_pic_lay.addWidget(picture, 0, 0, 4, 1)
+        pro_pic_lay.addWidget(picture, 0, 0, 5, 1)
 
-        rows = [(i, 1) for i in range(0, 4)]
+        rows = [(i, 1) for i in range(0, 5)]
 
         columns = []
         keys = list(self.account["details"].keys())
 
-        for row, item in zip(rows, keys[1:5]):
+        for row, item in zip(rows, keys[2:7]):
             label = QLabel(f"{item}:")
             label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            if row == (3, 1):
-                pro_pic_lay.addWidget(label, *row, alignment=Qt.AlignTop)
-            else:
-                pro_pic_lay.addWidget(label, *row)
+
+            pro_pic_lay.addWidget(label, *row)
             columns.append((row[0], 2))
         values = list(self.account["details"].values())
-        if not values[0] == "":
-            picture.setPixmap(QPixmap(values[0]))
+        if not values[1] == "":
+            picture.setPixmap(QPixmap(values[1]))
         else:
             picture.setPixmap(
                 QPixmap(self.params["ctx"].get_resource("image/avatar.png"))
             )
 
-        for column, item in zip(columns, values[1:5]):
+        for column, item in zip(columns, values[2:7]):
             label = QLabel(str(item if not item == "" else "-"))
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             label.setAlignment(Qt.AlignRight)
-            if column == (3, 2):
-                pro_pic_lay.addWidget(label, *column, alignment=Qt.AlignTop)
-            else:
-                pro_pic_lay.addWidget(label, *column)
+
+            pro_pic_lay.addWidget(label, *column)
 
         group_1_layout.addLayout(pro_pic_lay, 0, 0, 1, 2)
 
         rows = [
             (i, 0)
             for i in range(
-                len(self.account["details"].items()) - 5,
+                len(self.account["details"].items()) - 7,
                 len(self.account["details"].items()),
             )
         ]
         columns = []
-        for row, item in zip(rows, keys[5:]):
+        for row, item in zip(rows, keys[7:]):
             group_1_layout.addWidget(QLabel(f"{item}:"), *row)
             columns.append((row[0], 1))
 
-        for column, item in zip(columns, values[5:]):
+        for column, item in zip(columns, values[7:]):
             group_1_layout.addWidget(
                 QLabel(str(item if not item == "" else "-")),
                 *column,
@@ -276,12 +286,39 @@ class USER(QWidget):
 
     def _go_to(self, params):
         text = params["text"].lower().replace("view ", "")
-        view = USER_LDW(self.params, self.user_id, text)
+        view = USER_LDW(
+            self.params, self.user_id, self.account["details"]["Account Status"], text
+        )
         self.params["next"]["widget"].addWidget(view)
         self.params["next"]["widget"].setCurrentWidget(view)
 
     def _handle_toolbar_btn(self, params):
-        if params["text"] == "edit":
+        if params["text"] == "status":
+            new_status = (
+                "inactive"
+                if self.account["details"]["Account Status"].lower() == "active"
+                else "active"
+            )
+
+            msg = QMessageBox()
+            msg.setStyleSheet(
+                open(self.params["ctx"].get_resource("css/style.css")).read()
+            )
+            msg.setWindowTitle("Account Status Change")
+            msg.setIconPixmap(
+                QPixmap(self.params["ctx"].get_resource("icon/question.png"))
+            )
+            msg.setText(
+                f"Are you sure you want to set this account to {new_status.upper()}?"
+            )
+            msg.setStandardButtons(QMessageBox.No | QMessageBox.Yes)
+            msg.setDefaultButton(QMessageBox.Yes)
+            msg.buttonClicked.connect(
+                lambda choice: self._set_status(choice, new_status)
+            )
+            msg.exec_()
+            msg.show()
+        elif params["text"] == "edit":
             view = ADD_USER(self.params, user=self.account)
             self.params["next"]["widget"].addWidget(view)
             self.params["next"]["widget"].setCurrentWidget(view)
@@ -368,6 +405,30 @@ class USER(QWidget):
             msg.exec_()
             msg.show()
 
+    def _set_status(self, choice, new_status):
+        if choice.text() == "&Yes":
+            self.db.execute(
+                """UPDATE users SET
+                        status=? WHERE id=?;""",
+                (new_status, self.user_id),
+            )
+
+            self.params["db"].conn.commit()
+
+            msg = QMessageBox()
+            msg.setStyleSheet(
+                open(self.params["ctx"].get_resource("css/style.css")).read()
+            )
+            msg.setWindowTitle("Account Status Change")
+            msg.setIconPixmap(
+                QPixmap(self.params["ctx"].get_resource("icon/success.png"))
+            )
+            msg.setText(f"Account status changed successfully")
+            msg.setDefaultButton(QMessageBox.Ok)
+            msg.buttonClicked.connect(self._back)
+            msg.exec_()
+            msg.show()
+
     def _back(self):
         self.params["parent"]["back_btn"].click()
         self.params["parent"]["back_btn"].click()
@@ -384,7 +445,7 @@ class USER(QWidget):
         }
         self.db.execute("""SELECT * FROM users WHERE id=?;""", (self.user_id,))
         for item in self.db.fetchall():
-            print(item[2])
+            account["details"]["id"] = item[0]
             account["details"]["Image"] = item[9]
             account["details"]["Account Number"] = item[1]
             account["details"]["Name"] = f"{item[3]}"
@@ -392,10 +453,10 @@ class USER(QWidget):
                 float(round(item[2] if not item[2] == "" else 0.0, 2))
             )
             account["details"]["Account Type"] = item[7].capitalize()
+            account["details"]["Account Status"] = item[8].upper()
             account["details"]["Phonenumber"] = item[4]
             account["details"]["Email"] = item[5]
             account["details"]["Address"] = item[6]
-            account["details"]["Account Status"] = item[8].capitalize()
             account["details"]["Date Registered"] = datetime.strptime(
                 item[10], "%Y-%m-%d %H:%M:%S"
             ).strftime("%b %d, %Y  %H:%M")

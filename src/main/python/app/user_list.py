@@ -52,6 +52,7 @@ class USER_LIST(QWidget):
                 {"text": "select", "acc_type": 0, "self": self.sel_chk_0}
             )
         )
+
         self.del_sel_btn_0 = QPushButton(
             QIcon(self.params["ctx"].get_resource("icon/delete.png")), "Delete Selected"
         )
@@ -149,6 +150,7 @@ class USER_LIST(QWidget):
             table_view.setModel(self.model_2)
 
         table_view.setSortingEnabled(True)
+        table_view.sortByColumn(0, Qt.AscendingOrder)
         table_view.setSelectionMode(QAbstractItemView.SingleSelection)
         table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
         table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -237,7 +239,7 @@ class USER_LIST(QWidget):
         acc_type = "member" if account_type == 0 else "staff"
         self.db = self.params["db"].conn.cursor()
         self.db.execute(
-            """SELECT id, name FROM users WHERE account_type=? ORDER BY name ASC;""",
+            """SELECT id, name, status FROM users WHERE account_type=?;""",
             (acc_type,),
         )
         users = self.db.fetchall()
@@ -248,7 +250,9 @@ class USER_LIST(QWidget):
                     """SELECT total FROM savings WHERE user_id=?;""", (user[0],)
                 )
                 user_acc_bal = self.db.fetchone()[0]
-                self.table_data[account_type][1].append([f"{user[1]}", user_acc_bal])
+                self.table_data[account_type][1].append(
+                    [user[1], user_acc_bal, user[2].upper()]
+                )
         else:
             self.table_data[account_type][1] = [
                 [
@@ -437,8 +441,13 @@ class USERLISTTABLE(QAbstractTableModel):
                         return "\u20A6 {:,}".format(float(round(value, 2)))
                     return value
                 elif role == Qt.TextAlignmentRole:
-                    if index.column() == 1:
+                    if index.column() == 1 or index.column() == 2:
                         return Qt.AlignCenter
+                elif role == Qt.ForegroundRole:
+                    if index.column() == 1:
+                        return QColor("red" if value < 0 else "black")
+                    elif index.column() == 2:
+                        return QColor("green" if value.lower() == "active" else "red")
                 elif role == Qt.CheckStateRole:
                     if index.column() == 0:
                         return self.checkState(QPersistentModelIndex(index))
@@ -458,7 +467,7 @@ class USERLISTTABLE(QAbstractTableModel):
                         header = ["Data"]
                 except Exception:
                     pass
-                header = ["Name", "Balance"]
+                header = ["Name", "Balance", "Account Status"]
 
                 return header[section]
         if orientation == Qt.Vertical:
@@ -469,12 +478,17 @@ class USERLISTTABLE(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        if order == Qt.DescendingOrder:
-            self._data.sort()
-        else:
-            self._data.reverse()
-
+        if column == 0:
+            self._data.sort(reverse=True if order == Qt.DescendingOrder else False)
+        elif column == 2:
+            self._data.sort(
+                reverse=True if order == Qt.DescendingOrder else False,
+                key=self.by_status,
+            )
         self.layoutChanged.emit()
+
+    def by_status(self, elem):
+        return elem[2]
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
@@ -485,7 +499,7 @@ class USERLISTTABLE(QAbstractTableModel):
                 return 1
         except Exception:
             pass
-        return 2
+        return 3
 
     def checkState(self, index):
         if index in self.checks.keys():

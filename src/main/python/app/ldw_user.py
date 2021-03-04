@@ -1,19 +1,18 @@
-import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from apscheduler.triggers.interval import IntervalTrigger
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from app import Worker, db_file
+from app import Worker, functions
 
 
 class USER_LDW(QWidget):
-    def __init__(self, params, user_id, context):
+    def __init__(self, params, user_id, user_status, context):
         super().__init__()
         self.params = params
         self.user_id = user_id
+        self.user_status = user_status
         self.context = context
 
         self.search_date = {"from": None, "to": None}
@@ -112,7 +111,8 @@ class USER_LDW(QWidget):
         self.model = LDWUSERTABLE(data=data, context=self.context)
         self.table_view = QTableView()
         self.table_view.setModel(self.model)
-        # self.table_view.setSortingEnabled(True)
+        self.table_view.setSortingEnabled(True)
+        self.table_view.sortByColumn(1, Qt.AscendingOrder)
         self.table_view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -234,7 +234,7 @@ class USER_LDW(QWidget):
 
         if self.context == "loans":
             self.db.execute(
-                """SELECT * FROM loans WHERE user_id=? ORDER BY id DESC;""",
+                """SELECT * FROM loans WHERE user_id=?;""",
                 (self.user_id,),
             )
             loans = self.db.fetchall()
@@ -252,7 +252,7 @@ class USER_LDW(QWidget):
                 data.append(loan)
         elif self.context == "deposits":
             self.db.execute(
-                """SELECT * FROM deposits WHERE user_id=? ORDER BY id DESC;""",
+                """SELECT * FROM deposits WHERE user_id=?;""",
                 (self.user_id,),
             )
             deposits = self.db.fetchall()
@@ -263,7 +263,7 @@ class USER_LDW(QWidget):
                 data.append(deposit)
         elif self.context == "withdrawals":
             self.db.execute(
-                """SELECT * FROM withdrawals WHERE user_id=? ORDER BY id DESC;""",
+                """SELECT * FROM withdrawals WHERE user_id=?;""",
                 (self.user_id,),
             )
             withdrawals = self.db.fetchall()
@@ -436,24 +436,14 @@ class USER_LDW(QWidget):
 
                         self.params["db"].conn.commit()
 
-                        interest_start = datetime.strptime(
-                            deleted[1], "%Y-%m-%d"
-                        ) + timedelta(weeks=13.036)
-
-                        deposit_interval = IntervalTrigger(
-                            days=1,
-                            start_date=interest_start.strftime("%Y-%m-%d %H:%M:%S"),
-                        )
-
-                        self.params["qtsched"].add_job(
-                            self.interest_schedule,
-                            trigger=deposit_interval,
-                            args=[
-                                self.user_id,
-                                last_deposit_id,
-                            ],
-                            id=f"dep_{last_deposit_id} interest schedule",
-                            replace_existing=True,
+                        functions.check_sched_deposit(
+                            self.params,
+                            self.user_id,
+                            self.user_status,
+                            self.for_account,
+                            last_deposit_id,
+                            amt,
+                            deleted[1],
                         )
 
                     elif with_from == "interest":
@@ -491,123 +481,6 @@ class USER_LDW(QWidget):
     def _back(self):
         self.params["parent"]["back_btn"].click()
         self.params["parent"]["back_btn"].click()
-
-    @staticmethod
-    def interest_schedule(user_id, deposit_id):
-        conn = sqlite3.connect(db_file)
-
-        db = conn.cursor()
-        db.execute("""SELECT account_type FROM users WHERE id=?;""", (user_id,))
-        account = db.fetchone()
-        account_type = account[0]
-        status = account[1]
-
-        if status == "active":
-            db.execute(
-                """SELECT * FROM deposit_interest WHERE deposit_id=? AND user_id=?;""",
-                (deposit_id, user_id),
-            )
-            deposit_interest = db.fetchone()
-
-            if not deposit_interest is None:
-                run_time = deposit_interest[6]
-                run_time += 1
-                date_added = deposit_interest[3]
-                date_elapsed = datetime.strptime(
-                    date_added, "%Y-%m-%d"
-                ).date() + timedelta(days=run_time)
-                amount = deposit_interest[1]
-
-                db.execute(
-                    """SELECT interest_rate FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
-                    (account_type,),
-                )
-                interest_rate = db.fetchone()[0]
-                interest_rate_per_day = float(interest_rate) / 100 / 365
-
-                interest_per_day = float(deposit_interest[2])
-
-                cal = 0
-                db.execute(
-                    """SELECT interest_earned, total FROM savings WHERE user_id=?;""",
-                    (user_id,),
-                )
-                sav_intr = db.fetchone()
-                intr_earned = sav_intr[0]
-                total = sav_intr[1]
-
-                if interest_per_day == 0.0:
-                    db.execute(
-                        """SELECT interest_start FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
-                        (account_type,),
-                    )
-                    intr_start = db.fetchone()[0]
-                    ins = intr_start.split(" ")
-                    time = ins[1].lower().replace("(s)", "")
-
-                    if time == "year":
-                        time = 365 * int(ins[0])
-                    elif time == "month":
-                        time = 30.417 * int(ins[0])
-
-                    _months = time
-                    _months_interest = _months * interest_rate_per_day * float(amount)
-
-                    interest_per_day += _months_interest
-
-                    db.execute(
-                        """UPDATE deposit_interest SET
-                            interest=?,
-                            date_interest_start=?,
-                            date_last_interest=?,
-                            run_time=? WHERE deposit_id=? AND user_id=?;
-                        """,
-                        (
-                            round(interest_per_day),
-                            date_elapsed.strftime("%Y-%m-%d"),
-                            date_elapsed.strftime("%Y-%m-%d"),
-                            run_time,
-                            deposit_id,
-                            user_id,
-                        ),
-                    )
-                    intr_earned += round(interest_per_day)
-                    total += round(interest_per_day)
-                else:
-                    cal = float(amount) * float(interest_rate_per_day)
-                    interest_per_day += cal
-
-                    db.execute(
-                        """UPDATE deposit_interest SET
-                            interest=?,
-                            date_last_interest=?,
-                            run_time=? WHERE deposit_id=? AND user_id=?;""",
-                        (
-                            round(interest_per_day),
-                            date_elapsed.strftime("%Y-%m-%d"),
-                            run_time,
-                            deposit_id,
-                            user_id,
-                        ),
-                    )
-
-                    intr_earned += round(cal)
-                    total += round(cal)
-
-                db.execute(
-                    """UPDATE savings SET
-                        interest_earned=?,
-                        total=?,
-                        date_updated=? WHERE user_id=?;""",
-                    (
-                        round(intr_earned),
-                        round(total),
-                        date_elapsed.strftime("%Y-%m-%d"),
-                        user_id,
-                    ),
-                )
-                conn.commit()
-                db.close()
 
 
 class LDWUSERTABLE(QAbstractTableModel):
@@ -729,11 +602,15 @@ class LDWUSERTABLE(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        if order == Qt.DescendingOrder:
-            self._data.sort()
-        else:
-            self._data.reverse()
+        if column == 1:
+            self._data.sort(
+                reverse=True if order == Qt.DescendingOrder else False,
+                key=self.by_date,
+            )
         self.layoutChanged.emit()
+
+    def by_date(self, elem):
+        return elem[1]
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)

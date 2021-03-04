@@ -1,12 +1,10 @@
-import sqlite3
 from datetime import datetime, timedelta
 
-from apscheduler.triggers.interval import IntervalTrigger
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from app import db_file
+from app import functions
 
 
 class LOAN_FORM(QWidget):
@@ -657,8 +655,12 @@ class LOAN_FORM(QWidget):
                 msg.setText(f"Loan Issuance Successful")
                 msg.buttonClicked.connect(self._clear_all)
 
-                self._check_shed(
-                    data["id"], name, self.date.date().toPyDate(), self.due_date
+                functions.check_sched_loan(
+                    self.params,
+                    data["id"],
+                    name,
+                    self.date.date().toPyDate(),
+                    self.due_date,
                 )
 
             except Exception as e:
@@ -668,31 +670,6 @@ class LOAN_FORM(QWidget):
                 msg.setText(f"Error creating account, please check the form again")
             msg.setDefaultButton(QMessageBox.Ok)
             msg.exec_()
-
-    def _check_shed(self, user_id, name, start_date, end_date):
-        self.db.execute(
-            """SELECT id FROM loans WHERE user_id=? ORDER BY id DESC LIMIT 1;""",
-            (user_id,),
-        )
-        loan_id = self.db.fetchone()[0]
-        today = datetime.today().date()
-
-        if not start_date < today:
-            loan_interval = IntervalTrigger(
-                weeks=4.345,
-                start_date=start_date,
-                end_date=datetime.strptime(end_date, "%Y-%m-%d").date(),
-            )
-            self.params["qtsched"].add_job(
-                self.loan_schedule,
-                trigger=loan_interval,
-                args=[
-                    user_id,
-                    loan_id,
-                ],
-                id=f"{name} loan schedule",
-                replace_existing=True,
-            )
 
     def _clear_all(self):
         self.params["parent"]["back_btn"].click()
@@ -764,70 +741,3 @@ class LOAN_FORM(QWidget):
             return account
         else:
             return None
-
-    @staticmethod
-    def loan_schedule(user_id, loan_id):
-        conn = sqlite3.connect(db_file)
-        db = conn.cursor()
-
-        db.execute("""SELECT account_type, status FROM users WHERE id=?;""", (user_id,))
-        account = db.fetchone()
-        db.execute(
-            """SELECT loan_rate FROM settings WHERE account_type=? ORDER BY id DESC LIMIT 1;""",
-            (account[0],),
-        )
-        loan_rate = db.fetchone()[0]
-
-        db.execute(
-            """SELECT * FROM loans
-                WHERE id=? AND user_id=?;""",
-            (
-                loan_id,
-                user_id,
-            ),
-        )
-        loan = db.fetchone()
-
-        if not loan is None:
-            amount = loan[1]
-            old_curr_lia = loan[5]
-            loan_period = loan[7].split(" ")
-            time = loan_period[1].lower().replace("(s)", "")
-
-            if time == "year":
-                time = 52.143 * int(loan_period[0])
-            elif time == "month":
-                time = 4.345 * int(loan_period[0])
-
-            time = timedelta(weeks=time).days
-
-            due_date = datetime.strptime(loan[8], "%Y-%m-%d").date()
-            date_issued = datetime.strptime(loan[9], "%Y-%m-%d").date()
-            run_time = loan[10]
-            run_time += 1
-            run_time_days = run_time * 30.417
-
-            days_elapsed = date_issued + timedelta(days=run_time_days)
-
-            interest_per_month = float(amount) * int(loan_rate) / 100
-            new_curr_lia = float(old_curr_lia) + float(interest_per_month)
-
-            if days_elapsed.days == time:
-                db.execute(
-                    """UPDATE users SET
-                        status=? WHERE id=?""",
-                    ("inactive", user_id),
-                )
-
-            db.execute(
-                """UPDATE loans SET
-                    current_liability=?, run_time=? WHERE id=? AND user_id=?;""",
-                (
-                    new_curr_lia,
-                    round(run_time),
-                    loan_id,
-                    user_id,
-                ),
-            )
-            conn.commit()
-            db.close()

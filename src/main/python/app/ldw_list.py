@@ -149,6 +149,7 @@ class LDW_LIST(QWidget):
             self.model_2 = LDWTABLE(data=data[acc_type], context=self.context)
             table_view.setModel(self.model_2)
         table_view.setSortingEnabled(True)
+        table_view.sortByColumn(0, Qt.AscendingOrder)
         table_view.setSelectionMode(QAbstractItemView.SingleSelection)
         table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
         table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -176,12 +177,14 @@ class LDW_LIST(QWidget):
         ):
             i = i.data()
             self.db.execute(
-                """SELECT * FROM users WHERE name=?;""",
+                """SELECT id, status FROM users WHERE name=?;""",
                 (i,),
             )
-            user_id = self.db.fetchone()[0]
+            data = self.db.fetchone()
+            user_id = data[0]
+            user_status = data[1]
             if not self.context == "clear_loans":
-                view = USER_LDW(self.params, user_id, self.context)
+                view = USER_LDW(self.params, user_id, user_status, self.context)
                 self.params["next"]["widget"].addWidget(view)
                 self.params["next"]["widget"].setCurrentWidget(view)
             else:
@@ -532,11 +535,17 @@ class LDWTABLE(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        if order == Qt.DescendingOrder:
-            self._data.sort()
-        else:
-            self._data.reverse()
+        if column == 0:
+            self._data.sort(reverse=True if order == Qt.DescendingOrder else False)
+        elif column == 2:
+            self._data.sort(
+                reverse=True if order == Qt.DescendingOrder else False,
+                key=self.by_date,
+            )
         self.layoutChanged.emit()
+
+    def by_date(self, elem):
+        return elem[2]
 
     def rowCount(self, index):
         return len(self._data)

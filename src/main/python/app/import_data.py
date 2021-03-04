@@ -6,7 +6,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from app import home_dir
+from app import home_dir, functions
 
 
 class IMPORT(QDialog):
@@ -76,39 +76,47 @@ class IMPORT(QDialog):
         user_list = []
         user_deposit_list = []
         db = self.params["db"].conn.cursor()
+        msg = QMessageBox()
+        msg.setStyleSheet(open(self.params["ctx"].get_resource("css/style.css")).read())
         with open(file_path) as csv_file:
             csv_reader = csv.DictReader(csv_file)
             row_count = 0
 
-            for row in csv_reader:
-                name = row["NAME"].split(" ")
-                status = (
-                    "inactive"
-                    if name[-1] == "***" or name[-1].lower() == "xxx"
-                    else "active"
-                )
-                name = [item.capitalize() for item in name]
-                name = " ".join(
-                    name[:-1]
-                    if name[-1] == "***" or name[-1].lower() == "xxx"
-                    else name
-                )
+            try:
+                for row in csv_reader:
+                    user_id, status, last_deposit_id, dep_amt, deposit_date = (
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    )
+                    name = row["NAME"].split(" ")
+                    status = (
+                        "inactive"
+                        if name[-1] == "***" or name[-1].lower() == "xxx"
+                        else "active"
+                    )
+                    name = [item.capitalize() for item in name]
+                    name = " ".join(
+                        name[:-1]
+                        if name[-1] == "***" or name[-1].lower() == "xxx"
+                        else name
+                    )
 
-                db.execute("""SELECT id FROM users WHERE name=?;""", (name,))
-                current_user = db.fetchone()
+                    db.execute("""SELECT id FROM users WHERE name=?;""", (name,))
+                    current_user = db.fetchone()
 
-                user_does_exist = True if not current_user is None else False
-
-                try:
-                    if not user_does_exist:
-                        create_date = (
-                            datetime.strptime(
-                                row["DATE (SHARES)"], "%d/%m/%Y"
-                            ).strftime("%Y-%m-%d %H:%M:%S")
-                            if not row["DATE (SHARES)"] == ""
-                            else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    user_does_exist = True if not current_user is None else False
+                    create_date = (
+                        datetime.strptime(row["DATE (SHARES)"], "%d/%m/%Y").strftime(
+                            "%Y-%m-%d %H:%M:%S"
                         )
+                        if not row["DATE (SHARES)"] == ""
+                        else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    )
 
+                    if not user_does_exist:
                         db.execute(
                             """INSERT INTO users (
                                 account_number,
@@ -167,7 +175,7 @@ class IMPORT(QDialog):
                             if not deposit_date == ""
                             else create_date
                         )
-                        amt = row["SAVINGS CREDIT"]
+                        dep_amt = row["SAVINGS CREDIT"]
 
                         db.execute(
                             """SELECT balance,total FROM savings WHERE user_id=?""",
@@ -175,12 +183,18 @@ class IMPORT(QDialog):
                         )
 
                         savings = db.fetchone()
-                        bal = float(savings[0]) + float(amt) if not amt == "" else None
+                        bal = (
+                            float(savings[0]) + float(dep_amt)
+                            if not dep_amt == ""
+                            else None
+                        )
                         total = (
-                            float(savings[1]) + float(amt) if not amt == "" else None
+                            float(savings[1]) + float(dep_amt)
+                            if not dep_amt == ""
+                            else None
                         )
 
-                        if not amt == "":
+                        if not dep_amt == "":
                             db.execute(
                                 """UPDATE savings SET
                                         balance=?,
@@ -199,11 +213,18 @@ class IMPORT(QDialog):
                                     date,
                                     user_id) VALUES (?,?,?);""",
                                 (
-                                    float(amt),
+                                    float(dep_amt),
                                     deposit_date,
                                     user_id,
                                 ),
                             )
+
+                            db.execute(
+                                f"""SELECT id FROM deposits WHERE user_id=? ORDER BY id DESC LIMIT 1;""",
+                                (user_id,),
+                            )
+                            last_deposit_id = db.fetchone()[0]
+
                         # -------------------------------------
                         # -------------------------------------
                         withdraw_date = (
@@ -260,11 +281,12 @@ class IMPORT(QDialog):
                         # -------------------------------------
                         # -------------------------------------
                     else:
+                        user_id = current_user[0]
                         db.execute(
                             """INSERT INTO savings(date_updated, user_id) VALUES (?,?);""",
                             (
                                 create_date,
-                                current_user[0],
+                                user_id,
                             ),
                         )
 
@@ -284,20 +306,26 @@ class IMPORT(QDialog):
                             if not deposit_date == ""
                             else create_date
                         )
-                        amt = row["SAVINGS CREDIT"]
+                        dep_amt = row["SAVINGS CREDIT"]
 
                         db.execute(
                             """SELECT balance,total FROM savings WHERE user_id=?""",
-                            (current_user[0],),
+                            (user_id,),
                         )
 
                         savings = db.fetchone()
-                        bal = float(savings[0]) + float(amt) if not amt == "" else None
+                        bal = (
+                            float(savings[0]) + float(dep_amt)
+                            if not dep_amt == ""
+                            else None
+                        )
                         total = (
-                            float(savings[1]) + float(amt) if not amt == "" else None
+                            float(savings[1]) + float(dep_amt)
+                            if not dep_amt == ""
+                            else None
                         )
 
-                        if not amt == "":
+                        if not dep_amt == "":
                             db.execute(
                                 """UPDATE savings SET
                                         balance=?,
@@ -307,7 +335,7 @@ class IMPORT(QDialog):
                                     bal,
                                     total,
                                     savings_date,
-                                    current_user[0],
+                                    user_id,
                                 ),
                             )
                             db.execute(
@@ -316,11 +344,17 @@ class IMPORT(QDialog):
                                     date,
                                     user_id) VALUES (?,?,?);""",
                                 (
-                                    float(amt),
+                                    float(dep_amt),
                                     deposit_date,
-                                    current_user[0],
+                                    user_id,
                                 ),
                             )
+
+                            db.execute(
+                                f"""SELECT id FROM deposits WHERE user_id=? ORDER BY id DESC LIMIT 1;""",
+                                (user_id,),
+                            )
+                            last_deposit_id = db.fetchone()[0]
                         # -------------------------------------
                         # -------------------------------------
                         withdraw_date = (
@@ -341,7 +375,7 @@ class IMPORT(QDialog):
 
                         db.execute(
                             """SELECT balance,total FROM savings WHERE user_id=?""",
-                            (current_user[0],),
+                            (user_id,),
                         )
                         savings = db.fetchone()
                         bal = float(savings[0]) - float(amt) if not amt == "" else None
@@ -358,7 +392,7 @@ class IMPORT(QDialog):
                                     bal,
                                     total,
                                     savings_date,
-                                    current_user[0],
+                                    user_id,
                                 ),
                             )
                             db.execute(
@@ -371,21 +405,37 @@ class IMPORT(QDialog):
                                     float(amt),
                                     "balance",
                                     withdraw_date,
-                                    current_user[0],
+                                    user_id,
                                 ),
                             )
-                except Exception as e:
-                    msg = QMessageBox()
-                    msg.setStyleSheet(
-                        open(self.params["ctx"].get_resource("css/style.css")).read()
-                    )
-                    msg.setWindowTitle("ERROR")
-                    msg.setIconPixmap(
-                        QPixmap(self.params["ctx"].get_resource("icon/error.png"))
-                    )
-                    msg.setText(f"Error:\n{e}")
-                    msg.setDefaultButton(QMessageBox.Ok)
-                    msg.exec_()
-                    msg.show()
-                row_count += 1
-        self.params["db"].conn.commit()
+
+                    self.params["db"].conn.commit()
+
+                    if not dep_amt == "" and not last_deposit_id is None:
+                        functions.check_sched_deposit(
+                            self.params,
+                            user_id,
+                            status,
+                            "member",
+                            last_deposit_id,
+                            float(dep_amt),
+                            deposit_date,
+                        )
+                    row_count += 1
+
+                msg.setWindowTitle("Import Completed")
+                msg.setIconPixmap(
+                    QPixmap(self.params["ctx"].get_resource("icon/success.png"))
+                )
+                msg.setText("Account import completed")
+                msg.setDefaultButton(QMessageBox.Ok)
+                msg.buttonClicked.connect(lambda: self.hide())
+            except Exception as e:
+                msg.setWindowTitle("ERROR")
+                msg.setIconPixmap(
+                    QPixmap(self.params["ctx"].get_resource("icon/error.png"))
+                )
+                msg.setText(f"Error:\n{e}")
+                msg.setDefaultButton(QMessageBox.Ok)
+            msg.exec_()
+            msg.show()
