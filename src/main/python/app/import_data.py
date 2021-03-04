@@ -1,6 +1,6 @@
 import os
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -116,6 +116,20 @@ class IMPORT(QDialog):
                         else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     )
 
+                    db.execute(
+                        """SELECT loan_duration FROM settings WHERE account_type=?;""",
+                        ("member",),
+                    )
+                    loan_dura = db.fetchone()[0]
+
+                    dur = loan_dura.split(" ")
+                    time = dur[1].lower().replace("(s)", "")
+
+                    if time == "year":
+                        time = 52.143 * int(dur[0])
+                    elif time == "month":
+                        time = 4.345 * int(dur[0])
+
                     if not user_does_exist:
                         db.execute(
                             """INSERT INTO users (
@@ -177,24 +191,15 @@ class IMPORT(QDialog):
                         )
                         dep_amt = row["SAVINGS CREDIT"]
 
-                        db.execute(
-                            """SELECT balance,total FROM savings WHERE user_id=?""",
-                            (user_id,),
-                        )
-
-                        savings = db.fetchone()
-                        bal = (
-                            float(savings[0]) + float(dep_amt)
-                            if not dep_amt == ""
-                            else None
-                        )
-                        total = (
-                            float(savings[1]) + float(dep_amt)
-                            if not dep_amt == ""
-                            else None
-                        )
-
                         if not dep_amt == "":
+                            db.execute(
+                                """SELECT balance,total FROM savings WHERE user_id=?""",
+                                (user_id,),
+                            )
+
+                            savings = db.fetchone()
+                            bal = float(savings[0]) + float(dep_amt)
+                            total = float(savings[1]) + float(dep_amt)
                             db.execute(
                                 """UPDATE savings SET
                                         balance=?,
@@ -241,18 +246,17 @@ class IMPORT(QDialog):
                             if not withdraw_date == ""
                             else create_date
                         )
+
                         amt = row["SAVINGS DEBIT"]
 
-                        db.execute(
-                            """SELECT balance,total FROM savings WHERE user_id=?""",
-                            (user_id,),
-                        )
-                        savings = db.fetchone()
-                        bal = float(savings[0]) - float(amt) if not amt == "" else None
-                        total = (
-                            float(savings[1]) - float(amt) if not amt == "" else None
-                        )
                         if not amt == "":
+                            db.execute(
+                                """SELECT balance,total FROM savings WHERE user_id=?""",
+                                (user_id,),
+                            )
+                            savings = db.fetchone()
+                            bal = float(savings[0]) - float(amt)
+                            total = float(savings[1]) - float(amt)
                             db.execute(
                                 """UPDATE savings SET
                                     balance=?,
@@ -280,6 +284,64 @@ class IMPORT(QDialog):
                             )
                         # -------------------------------------
                         # -------------------------------------
+                        loan_date = (
+                            datetime.strptime(row["DATE (LOAN)"], "%d/%m/%Y").strftime(
+                                "%Y-%m-%d"
+                            )
+                            if not row["DATE (LOAN)"] == ""
+                            else datetime.now().strftime("%Y-%m-%d")
+                        )
+                        td_date = datetime.strptime(loan_date, "%Y-%m-%d")
+
+                        loan_amt = row["LOAN"]
+
+                        if not loan_amt == "":
+                            due_date = td_date + timedelta(weeks=time)
+                            loan_status = (
+                                "cleared"
+                                if row["OUTSTANDING PAYMENT (LOAN)"] == ""
+                                else "not cleared"
+                            )
+                            db.execute(
+                                """INSERT INTO loans (
+                                    amount,
+                                    guarantor_one,
+                                    guarantor_two,
+                                    cleared_amount,
+                                    current_liability,
+                                    status,
+                                    loan_period,
+                                    loan_due_date,
+                                    date_issued,
+                                    user_id) VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                                (
+                                    float(loan_amt),
+                                    "nil",
+                                    "nil",
+                                    round(
+                                        float(
+                                            row["CLEARED PAYMENT (LOAN)"]
+                                            if not row["CLEARED PAYMENT (LOAN)"] == ""
+                                            else 0.0
+                                        ),
+                                        2,
+                                    ),
+                                    round(
+                                        float(
+                                            row["OUTSTANDING PAYMENT (LOAN)"]
+                                            if not row["OUTSTANDING PAYMENT (LOAN)"]
+                                            == ""
+                                            else 0.0
+                                        ),
+                                        2,
+                                    ),
+                                    loan_status,
+                                    loan_dura,
+                                    due_date.date(),
+                                    loan_date,
+                                    user_id,
+                                ),
+                            )
                     else:
                         user_id = current_user[0]
                         db.execute(
@@ -308,24 +370,17 @@ class IMPORT(QDialog):
                         )
                         dep_amt = row["SAVINGS CREDIT"]
 
-                        db.execute(
-                            """SELECT balance,total FROM savings WHERE user_id=?""",
-                            (user_id,),
-                        )
-
-                        savings = db.fetchone()
-                        bal = (
-                            float(savings[0]) + float(dep_amt)
-                            if not dep_amt == ""
-                            else None
-                        )
-                        total = (
-                            float(savings[1]) + float(dep_amt)
-                            if not dep_amt == ""
-                            else None
-                        )
-
                         if not dep_amt == "":
+                            db.execute(
+                                """SELECT balance,total FROM savings WHERE user_id=?""",
+                                (user_id,),
+                            )
+
+                            savings = db.fetchone()
+
+                            bal = float(savings[0]) + float(dep_amt)
+                            total = float(savings[1]) + float(dep_amt)
+
                             db.execute(
                                 """UPDATE savings SET
                                         balance=?,
@@ -355,8 +410,10 @@ class IMPORT(QDialog):
                                 (user_id,),
                             )
                             last_deposit_id = db.fetchone()[0]
+
                         # -------------------------------------
                         # -------------------------------------
+
                         withdraw_date = (
                             datetime.strptime(
                                 row["DATE (SAVINGS DEBIT)"], "%d/%m/%Y"
@@ -371,18 +428,20 @@ class IMPORT(QDialog):
                             if not withdraw_date == ""
                             else create_date
                         )
+
                         amt = row["SAVINGS DEBIT"]
 
-                        db.execute(
-                            """SELECT balance,total FROM savings WHERE user_id=?""",
-                            (user_id,),
-                        )
-                        savings = db.fetchone()
-                        bal = float(savings[0]) - float(amt) if not amt == "" else None
-                        total = (
-                            float(savings[1]) - float(amt) if not amt == "" else None
-                        )
                         if not amt == "":
+                            db.execute(
+                                """SELECT balance,total FROM savings WHERE user_id=?""",
+                                (user_id,),
+                            )
+
+                            savings = db.fetchone()
+
+                            bal = float(savings[0]) - float(amt)
+                            total = float(savings[1]) - float(amt)
+
                             db.execute(
                                 """UPDATE savings SET
                                     balance=?,
@@ -405,6 +464,68 @@ class IMPORT(QDialog):
                                     float(amt),
                                     "balance",
                                     withdraw_date,
+                                    user_id,
+                                ),
+                            )
+
+                        # -------------------------------------
+                        # -------------------------------------
+
+                        loan_date = (
+                            datetime.strptime(row["DATE (LOAN)"], "%d/%m/%Y").strftime(
+                                "%Y-%m-%d"
+                            )
+                            if not row["DATE (LOAN)"] == ""
+                            else datetime.now().strftime("%Y-%m-%d")
+                        )
+                        td_date = datetime.strptime(loan_date, "%Y-%m-%d")
+
+                        loan_amt = row["LOAN"]
+
+                        if not loan_amt == "":
+                            due_date = td_date + timedelta(weeks=time)
+                            loan_status = (
+                                "cleared"
+                                if row["OUTSTANDING PAYMENT (LOAN)"] == ""
+                                else "not cleared"
+                            )
+                            db.execute(
+                                """INSERT INTO loans (
+                                    amount,
+                                    guarantor_one,
+                                    guarantor_two,
+                                    cleared_amount,
+                                    current_liability,
+                                    status,
+                                    loan_period,
+                                    loan_due_date,
+                                    date_issued,
+                                    user_id) VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                                (
+                                    float(loan_amt),
+                                    "nil",
+                                    "nil",
+                                    round(
+                                        float(
+                                            row["CLEARED PAYMENT (LOAN)"]
+                                            if not row["CLEARED PAYMENT (LOAN)"] == ""
+                                            else 0.0
+                                        ),
+                                        2,
+                                    ),
+                                    round(
+                                        float(
+                                            row["OUTSTANDING PAYMENT (LOAN)"]
+                                            if not row["OUTSTANDING PAYMENT (LOAN)"]
+                                            == ""
+                                            else 0.0
+                                        ),
+                                        2,
+                                    ),
+                                    loan_status,
+                                    loan_dura,
+                                    due_date.date(),
+                                    loan_date,
                                     user_id,
                                 ),
                             )

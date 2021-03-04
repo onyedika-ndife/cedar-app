@@ -537,15 +537,43 @@ class LDWTABLE(QAbstractTableModel):
         self.layoutAboutToBeChanged.emit()
         if column == 0:
             self._data.sort(reverse=True if order == Qt.DescendingOrder else False)
-        elif column == 2:
-            self._data.sort(
-                reverse=True if order == Qt.DescendingOrder else False,
-                key=self.by_date,
-            )
+
+        if self.context == "deposits" or self.context == "withdrawals":
+            if column == 2:
+                self._data.sort(
+                    reverse=True if order == Qt.DescendingOrder else False,
+                    key=self.by_date,
+                )
+        elif self.context == "loans" or self.context == "clear_loans":
+            if column == 1:
+                self._data.sort(
+                    reverse=True if order == Qt.DescendingOrder else False,
+                    key=self.by_amt,
+                )
+            elif column == 8:
+                self._data.sort(
+                    reverse=True if order == Qt.DescendingOrder else False,
+                    key=self.by_date_loan_1,
+                )
+            elif column == 9:
+                self._data.sort(
+                    reverse=True if order == Qt.DescendingOrder else False,
+                    key=self.by_date_loan_2,
+                )
+
         self.layoutChanged.emit()
 
     def by_date(self, elem):
         return elem[2]
+
+    def by_date_loan_1(self, elem):
+        return elem[8]
+
+    def by_date_loan_2(self, elem):
+        return elem[9]
+
+    def by_amt(self, elem):
+        return elem[1]
 
     def rowCount(self, index):
         return len(self._data)
