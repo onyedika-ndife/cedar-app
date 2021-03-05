@@ -201,12 +201,12 @@ class IMPORT(QDialog):
                         dep_amt = row["SAVINGS CREDIT"]
 
                         if not dep_amt == "":
+                            dep_amt = dep_amt.replace(",", "")
+
                             db.execute(
                                 """SELECT balance,total FROM savings WHERE user_id=?""",
                                 (user_id,),
                             )
-
-                            dep_amt = dep_amt.replace(",", "")
 
                             savings = db.fetchone()
                             bal = float(savings[0]) + float(dep_amt)
