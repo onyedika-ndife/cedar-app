@@ -241,7 +241,10 @@ class ADD_USER(QWidget):
     def _calc(self, number):
         if not number == "":
             number = number.replace(",", "")
-            new_numb = "{:,}".format(float(number))
+            if number.find(".") > 0:
+                new_numb = "{:,}".format(round(float(number)))
+            else:
+                new_numb = "{:,}".format(int(number))
             self.shares.setText(new_numb)
 
     def _get_image(self):
