@@ -149,7 +149,7 @@ class IMPORT(QDialog):
                                 date_created) VALUES (?,?,?,?,?,?);""",
                             (
                                 row["ACCOUNT NUMBER"],
-                                row["SHARES"],
+                                row["SHARES"].replace(",", ""),
                                 name,
                                 "member",
                                 status,
@@ -205,6 +205,8 @@ class IMPORT(QDialog):
                                 (user_id,),
                             )
 
+                            dep_amt = dep_amt.replace(",", "")
+
                             savings = db.fetchone()
                             bal = float(savings[0]) + float(dep_amt)
                             total = float(savings[1]) + float(dep_amt)
@@ -258,6 +260,7 @@ class IMPORT(QDialog):
                         amt = row["SAVINGS DEBIT"]
 
                         if not amt == "":
+                            amt = amt.replace(",", "")
                             db.execute(
                                 """SELECT balance,total FROM savings WHERE user_id=?""",
                                 (user_id,),
@@ -304,6 +307,7 @@ class IMPORT(QDialog):
                         loan_amt = row["LOAN"]
 
                         if not loan_amt == "":
+                            loan_amt = loan_amt.replace(",", "")
                             due_date = td_date + timedelta(weeks=time)
                             loan_status = (
                                 "cleared"
@@ -379,6 +383,7 @@ class IMPORT(QDialog):
                         dep_amt = row["SAVINGS CREDIT"]
 
                         if not dep_amt == "":
+                            dep_amt = dep_amt.replace(",", "")
                             db.execute(
                                 """SELECT balance,total FROM savings WHERE user_id=?""",
                                 (user_id,),
@@ -440,6 +445,7 @@ class IMPORT(QDialog):
                         amt = row["SAVINGS DEBIT"]
 
                         if not amt == "":
+                            amt = amt.replace(",", "")
                             db.execute(
                                 """SELECT balance,total FROM savings WHERE user_id=?""",
                                 (user_id,),
@@ -491,6 +497,7 @@ class IMPORT(QDialog):
                         loan_amt = row["LOAN"]
 
                         if not loan_amt == "":
+                            loan_amt = loan_amt.replace(",", "")
                             due_date = td_date + timedelta(weeks=time)
                             loan_status = (
                                 "cleared"
