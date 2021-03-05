@@ -333,7 +333,9 @@ class IMPORT(QDialog):
                                     "nil",
                                     round(
                                         float(
-                                            row["CLEARED PAYMENT (LOAN)"]
+                                            row["CLEARED PAYMENT (LOAN)"].replace(
+                                                ",", ""
+                                            )
                                             if not row["CLEARED PAYMENT (LOAN)"] == ""
                                             else 0.0
                                         ),
@@ -341,7 +343,9 @@ class IMPORT(QDialog):
                                     ),
                                     round(
                                         float(
-                                            row["OUTSTANDING PAYMENT (LOAN)"]
+                                            row["OUTSTANDING PAYMENT (LOAN)"].replace(
+                                                ",", ""
+                                            )
                                             if not row["OUTSTANDING PAYMENT (LOAN)"]
                                             == ""
                                             else 0.0
@@ -523,7 +527,9 @@ class IMPORT(QDialog):
                                     "nil",
                                     round(
                                         float(
-                                            row["CLEARED PAYMENT (LOAN)"]
+                                            row["CLEARED PAYMENT (LOAN)"].replace(
+                                                ",", ""
+                                            )
                                             if not row["CLEARED PAYMENT (LOAN)"] == ""
                                             else 0.0
                                         ),
@@ -531,7 +537,9 @@ class IMPORT(QDialog):
                                     ),
                                     round(
                                         float(
-                                            row["OUTSTANDING PAYMENT (LOAN)"]
+                                            row["OUTSTANDING PAYMENT (LOAN)"].replace(
+                                                ",", ""
+                                            )
                                             if not row["OUTSTANDING PAYMENT (LOAN)"]
                                             == ""
                                             else 0.0
